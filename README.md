@@ -35,9 +35,9 @@
 
 ## Командный
 Позволяет отправлять сообщения, используя команды:
-- /msg <username> <message> - отправить сообщение <message> пользователю <username>
+- /msg `username` `message` - отправить сообщение `message` пользователю `username`
 - /list - вывод списка активных чатов
-- /chat <username> - отобразить чат с пользователем <username>
+- /chat `username` - отобразить чат с пользователем `username`
 - /exit - выйти из аккаунта
 - /quit - выйти из приложения
 
@@ -49,6 +49,7 @@
 - CMake для сборки
 
 # Структура проекта
+```
 Mini_messenger/
  ├── CMakeLists.txt
  ├── server/
@@ -61,3 +62,4 @@ Mini_messenger/
  │    └── message.hpp   (протокол: структура сообщения)
  ├── .gitignore
  └── README.md
+ ```
