@@ -1,21 +1,18 @@
 #include "client.hpp"
 
-#define LANG_CHARS 26
 
-
-Client::Client(const std::string& server_ip_address, const std::string& server_port, const std::string& msg) 
+Connection::Connection(const std::string& server_ip_address, const std::string& server_port) 
     : 
         ip_address(server_ip_address), 
-        port(server_port), 
-        message(msg) 
+        port(server_port)
     {}
 
-Client::~Client() {
+Connection::~Connection() {
     freeaddrinfo(client_info);
     close(socket_fd);
 }
 
-void Client::init() {
+void Connection::init() {
     struct addrinfo hints;
     memset(&hints, 0, sizeof(hints));
 
@@ -58,7 +55,7 @@ void Client::init() {
     printf("client: connecting to %s\n", other_hand);
 }
 
-void Client::start() {
+void Connection::start() {
     init();
 
     for (;;) {
@@ -69,7 +66,7 @@ void Client::start() {
     }
 }
 
-void Client::recieve() {
+void Connection::recieve() {
     // std::cout << "Waiting for message from server..." << std::endl;
     if ((recv_len = recv(socket_fd, &recv_buf, SIZE, 0)) == -1) {
         fprintf(stderr, "client recieve error\n");
@@ -80,7 +77,7 @@ void Client::recieve() {
     fflush(stdout);
 }
 
-void Client::send() {
+void Connection::send() {
     // std::cout << "Enter message to server: \n";
     int sent_len = 0; 
     
@@ -89,21 +86,4 @@ void Client::send() {
         exit(1);
     }
 
-}
-
-
-
-
-
-std::string hash(std::string str) {
-    unsigned int shift = std::accumulate(str.begin(), str.end(), 0) % LANG_CHARS;
-    
-    for (char& symbol : str) {
-        char base = std::isupper(symbol) ? 'A' : 'a';
-        auto num = symbol - base;
-
-        symbol = (num + shift + LANG_CHARS) % LANG_CHARS + base;
-    }
-    std::cout << "new password : " << str << std::endl;
-    return str;
 }

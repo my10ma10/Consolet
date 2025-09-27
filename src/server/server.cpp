@@ -109,9 +109,6 @@ void Server::send() {
     }
 }
 
-
-
-
 std::string Server::getIPaddr() const {
     char buffer[INET_ADDRSTRLEN];
     inet_ntop(

@@ -3,7 +3,7 @@
 #define PORT "3490"
 
 int main() {
-    Client client("127.0.0.1", PORT);
+    Connection client("127.0.0.1", PORT);
     client.start();
     
     return 0;

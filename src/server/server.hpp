@@ -1,8 +1,8 @@
 #pragma once
 #include <iostream>
-#include <cassert>
-#include <unistd.h>
+#include <vector>
 
+#include <unistd.h>
 #include <netdb.h>
 #include <string.h>
 
@@ -34,8 +34,8 @@ class Server {
 
     std::string message = "pong";
     
-    char recv_buf[SIZE];
-    int recv_len;
+    size_t recv_len;
+    std::vector<char> recv_buf = std::vector<char>(SIZE);
     
     int listen_fd;
 
