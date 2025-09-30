@@ -3,7 +3,7 @@
 #include <vector>
 #include <cassert>
 
-#include "../usr/user.hpp"
+#include "user.hpp"
 
 class Chat {
 protected:

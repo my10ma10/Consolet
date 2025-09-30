@@ -1,8 +1,9 @@
 #pragma once
 #include <memory>
+#include <vector>
 
-#include "../usr/user.hpp"
-#include "../client/client.hpp"
+#include "user.hpp"
+#include "client.hpp"
 
 class Session {
     std::shared_ptr<User> user;

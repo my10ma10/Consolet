@@ -13,17 +13,6 @@
 #define BACKLOG 10
 #define SIZE 1024
 
-/*
-int getaddrinfo(
-    const char *node,               // например, "www.example.com" или IP     
-    const char *service,            // например, "http" или номер порта
-    const struct addrinfo *hints,  
-    struct addrinfo **res);
-    
-    Жизненный цикл сервера:
-    socket() -> bind() -> listen() -> accept() -> read/write
-*/
-
 class Server {
     struct addrinfo * server_info; // содержит sockaddr
     struct sockaddr_storage calling_info;

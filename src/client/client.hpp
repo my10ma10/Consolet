@@ -11,7 +11,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
-#include "../usr/user.hpp"
+#include "user.hpp"
 
 /*
     Жизненный цикл клиента:

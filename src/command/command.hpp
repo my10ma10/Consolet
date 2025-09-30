@@ -1,7 +1,7 @@
 #pragma once
 #include <memory>
 
-#include "../message/message.hpp"
+#include "message.hpp"
 
 class ICommand {
 public:

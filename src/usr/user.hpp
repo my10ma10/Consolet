@@ -1,8 +1,6 @@
 #pragma once
 #include <iostream>
 
-#include "../chat/chat.hpp"
-
 class Chat;
 
 class User {
