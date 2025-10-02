@@ -30,7 +30,7 @@ class Connection {
     char recv_buf[SIZE];
     int recv_len;
     
-    std::string message = "ping";
+    std::string message;
 
 public:
     Connection(
@@ -39,7 +39,7 @@ public:
     );
     ~Connection();
     void init();
-    
+    void connect();
     void start();
 
     void recieve();

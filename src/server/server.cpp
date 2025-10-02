@@ -67,29 +67,35 @@ void Server::init() {
     fflush(stdout);
 }
 
-void Server::start() {
-    init();
-
-    for (;;) {
-        std::cout << "Enter message to client: \n";
-        std::cin >> message;
-        recieve();
-        send();
-    }
-}
-
-void Server::recieve() {
-    // std::cout << "Waiting for message from client..." << std::endl;
-    socklen_t calling_size = sizeof(calling_info);
-    
+void Server::connect() {
+    socklen_t calling_size = sizeof(calling_info);    
     listen_fd = accept(socket_fd, (struct sockaddr *)&calling_info, &calling_size);
     
     if (listen_fd == -1) {
         fprintf(stderr, "server accept error\n");
         exit(1);
     }
+}
+
+void Server::start() {
+    init();
+    connect();
+
+    for (;;) {
+        recieve();        
+        std::cout << "Enter message to client: \n";
+        std::cin >> message;
+        send();
+    }
+}
+
+void Server::recieve() {
+    // std::cout << "Waiting for message from client..." << std::endl;
+    std::cout << "trying to clean recv_buf\n";
+    std::fill(recv_buf.begin(), recv_buf.end(), 0);
     
-    if ((recv_len = recv(listen_fd, &recv_buf, SIZE, 0)) == -1) {
+    
+    if ((recv_len = recv(listen_fd, recv_buf.data(), SIZE, 0)) == -1) {
         fprintf(stderr, "server recv error\n");
         exit(1);
     }
@@ -97,7 +103,12 @@ void Server::recieve() {
         fprintf(stdout, "The connection was closed by removed hand\n");
     }
 
-    printf("Server recieved message: %s\n", recv_buf);
+    std::cout << recv_buf.size() << std::endl;
+    printf("Server recieved message: ");
+    for (size_t i = 0; i < recv_len; ++i) {
+        printf("%c", recv_buf[i]);
+    }
+    printf("\n");
     fflush(stdout);
 }
 

@@ -26,6 +26,10 @@ void Connection::init() {
         exit(1);
     }
     
+    
+}
+
+void Connection::connect() {
     struct addrinfo * p;
     for (p = client_info; p != NULL; p = p->ai_next) {
         if ((socket_fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
@@ -33,7 +37,7 @@ void Connection::init() {
             continue;
         }
 
-        if (connect(socket_fd, p->ai_addr, p->ai_addrlen) == -1) {
+        if (::connect(socket_fd, p->ai_addr, p->ai_addrlen) == -1) {
             perror("connecting error");
             continue;
         }
@@ -57,6 +61,7 @@ void Connection::init() {
 
 void Connection::start() {
     init();
+    connect();
 
     for (;;) {
         std::cout << "Enter message to server: \n";
@@ -68,6 +73,8 @@ void Connection::start() {
 
 void Connection::recieve() {
     // std::cout << "Waiting for message from server..." << std::endl;
+    memset(recv_buf, 0, SIZE);
+    
     if ((recv_len = recv(socket_fd, &recv_buf, SIZE, 0)) == -1) {
         fprintf(stderr, "client recieve error\n");
         exit(1);

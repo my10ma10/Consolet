@@ -35,6 +35,7 @@ public:
 
     void start();
     void init();
+    void connect();
 
     void recieve();
     void send();
