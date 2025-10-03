@@ -2,6 +2,8 @@
 #include <iostream>
 #include <vector>
 #include <memory>
+#include <thread>
+#include <mutex>
 
 #include <string.h>
 #include <unistd.h>
@@ -27,11 +29,11 @@ class Connection {
     std::string ip_address;
     std::string port;
 
-    char recv_buf[SIZE];
+    std::vector<char> recv_buf = std::vector<char>(SIZE);
     int recv_len;
     
     std::string message;
-
+    std::mutex outMtx;
 public:
     Connection(
         const std::string& server_ip_address, 
@@ -44,6 +46,8 @@ public:
 
     void recieve();
     void send();
+
+    void printMsg();
 };
 
 

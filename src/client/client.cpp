@@ -49,43 +49,53 @@ void Connection::connect() {
         exit(2);
     }
 
-    char other_hand[SIZE];
+    char server_ip[SIZE];
     inet_ntop(
         p->ai_family, 
         &(((struct sockaddr_in *)p->ai_addr)->sin_addr), 
-        other_hand,
-        sizeof(other_hand)
+        server_ip,
+        sizeof(server_ip)
     );
-    printf("client: connecting to %s\n", other_hand);
+    printf("client: connecting to %s\n", server_ip);
 }
 
 void Connection::start() {
     init();
     connect();
 
-    for (;;) {
-        std::cout << "Enter message to server: \n";
-        std::getline(std::cin, message);
-        send();
-        recieve();
-    }
+    std::thread send_thread([&] () {
+        for (;;) {
+            std::cout << "Enter message to server: \n";
+            std::getline(std::cin, message);
+            send();
+        }
+    });
+
+    std::thread recv_thread([&] () {
+        for (;;) {
+            recieve();
+            printMsg();
+        }
+    });
+        
+    if (send_thread.joinable()) send_thread.join();
+    if (recv_thread.joinable()) recv_thread.join();
 }
 
 void Connection::recieve() {
-    // std::cout << "Waiting for message from server..." << std::endl;
-    memset(recv_buf, 0, SIZE);
+    std::fill(recv_buf.begin(), recv_buf.end(), 0);
     
-    if ((recv_len = recv(socket_fd, &recv_buf, SIZE, 0)) == -1) {
+    if ((recv_len = ::recv(socket_fd, recv_buf.data(), SIZE, 0)) == -1) {
         fprintf(stderr, "client recieve error\n");
         exit(1);
     }
-
-    printf("Client recieved message: %s\n", recv_buf);
-    fflush(stdout);
+    else if (recv_len == 0) {
+        fprintf(stdout, "The connection was closed by removed hand\n");
+        exit(0);
+    }
 }
 
 void Connection::send() {
-    // std::cout << "Enter message to server: \n";
     int sent_len = 0; 
     
     if ((sent_len = ::send(socket_fd, message.c_str(), strlen(message.c_str()), 0)) == -1) {
@@ -93,4 +103,13 @@ void Connection::send() {
         exit(1);
     }
 
+}
+
+void Connection::printMsg() {
+    std::scoped_lock lock(outMtx);
+    printf("Client recieved message: \n");
+    for (size_t i = 0; i < recv_len; ++i) {
+        printf("%c", recv_buf[i]);
+    }
+    printf("\n");
 }

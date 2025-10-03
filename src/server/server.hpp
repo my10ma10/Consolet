@@ -1,6 +1,8 @@
 #pragma once
 #include <iostream>
 #include <vector>
+#include <thread>
+#include <mutex>
 
 #include <unistd.h>
 #include <netdb.h>
@@ -21,13 +23,14 @@ class Server {
     std::string ip_address;
     std::string port;
 
-    std::string message = "pong";
+    std::string message;
     
     size_t recv_len;
     std::vector<char> recv_buf = std::vector<char>(SIZE);
     
     int listen_fd;
 
+    std::mutex outMtx;
     
 public:
     Server(const std::string& ip_addr, const std::string& port);
@@ -39,6 +42,8 @@ public:
 
     void recieve();
     void send();
+
+    void printMsg();
 
     std::string getIPaddr() const;
 };

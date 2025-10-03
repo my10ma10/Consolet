@@ -81,42 +81,53 @@ void Server::start() {
     init();
     connect();
 
-    for (;;) {
-        recieve();        
-        std::cout << "Enter message to client: \n";
-        std::getline(std::cin, message);
-        send();
-    }
+    std::thread recv_thread([&] () {
+        for (;;) {
+            recieve();
+            printMsg();
+        }
+    });
+        
+    std::thread send_thread([&] () {
+        for (;;) {
+            std::cout << "Enter message to client: \n";
+            std::getline(std::cin, message);
+            send();
+        }
+    });
+    
+    if (recv_thread.joinable()) recv_thread.join();
+    if (send_thread.joinable()) send_thread.join();
 }
 
 void Server::recieve() {
-    // std::cout << "Waiting for message from client..." << std::endl;
-    std::cout << "trying to clean recv_buf\n";
     std::fill(recv_buf.begin(), recv_buf.end(), 0);
     
     
-    if ((recv_len = recv(listen_fd, recv_buf.data(), SIZE, 0)) == -1) {
+    if ((recv_len = ::recv(listen_fd, recv_buf.data(), SIZE, 0)) == -1) {
         fprintf(stderr, "server recv error\n");
         exit(1);
     }
     else if (recv_len == 0) {
         fprintf(stdout, "The connection was closed by removed hand\n");
+        exit(0);
     }
-
-    printf("Server recieved message: ");
-    for (size_t i = 0; i < recv_len; ++i) {
-        printf("%c", recv_buf[i]);
-    }
-    printf("\n");
-    fflush(stdout);
 }
 
 void Server::send() {
-    // std::cout << "Enter message to client: \n";
     if (::send(listen_fd, message.c_str(), strlen(message.c_str()), 0) == -1) {
         fprintf(stderr, "server sending error\n");
         exit(1);
     }
+}
+
+void Server::printMsg() {
+    std::scoped_lock lock(outMtx);
+    printf("Server recieved message: \n");
+    for (size_t i = 0; i < recv_len; ++i) {
+        printf("%c", recv_buf[i]);
+    }
+    printf("\n");
 }
 
 std::string Server::getIPaddr() const {
