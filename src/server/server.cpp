@@ -84,7 +84,7 @@ void Server::start() {
     for (;;) {
         recieve();        
         std::cout << "Enter message to client: \n";
-        std::cin >> message;
+        std::getline(std::cin, message);
         send();
     }
 }
@@ -103,7 +103,6 @@ void Server::recieve() {
         fprintf(stdout, "The connection was closed by removed hand\n");
     }
 
-    std::cout << recv_buf.size() << std::endl;
     printf("Server recieved message: ");
     for (size_t i = 0; i < recv_len; ++i) {
         printf("%c", recv_buf[i]);

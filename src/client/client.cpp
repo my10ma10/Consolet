@@ -65,7 +65,7 @@ void Connection::start() {
 
     for (;;) {
         std::cout << "Enter message to server: \n";
-        std::cin >> message;
+        std::getline(std::cin, message);
         send();
         recieve();
     }

@@ -18,7 +18,7 @@
     socket() -> connect() -> write/read
 */
 
-#define SIZE 1024
+#define SIZE 4096
 
 
 class Connection {

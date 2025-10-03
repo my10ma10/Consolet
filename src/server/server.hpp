@@ -11,7 +11,7 @@
 #include <arpa/inet.h>
 
 #define BACKLOG 10
-#define SIZE 1024
+#define SIZE 4096
 
 class Server {
     struct addrinfo * server_info; // содержит sockaddr
