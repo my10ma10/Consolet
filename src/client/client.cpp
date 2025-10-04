@@ -1,11 +1,12 @@
 #include "client.hpp"
 
-
 Connection::Connection(const std::string& server_ip_address, const std::string& server_port) 
     : 
         ip_address(server_ip_address), 
         port(server_port)
-    {}
+    {  
+        init();
+    }
 
 Connection::~Connection() {
     freeaddrinfo(client_info);
@@ -22,8 +23,10 @@ void Connection::init() {
 
     int status;
     if ((status = getaddrinfo(ip_address.c_str(), port.c_str(), &hints, &client_info)) != 0) {
-        fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(status));
-        exit(1);
+        std::cerr << "getaddrinfo error: %s\n", gai_strerror(status);
+        std::flush(std::cerr);
+
+        stop();
     }
     
     
@@ -33,20 +36,20 @@ void Connection::connect() {
     struct addrinfo * p;
     for (p = client_info; p != NULL; p = p->ai_next) {
         if ((socket_fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-            perror("client socket error");
+            std::perror("client socket error");
             continue;
         }
 
         if (::connect(socket_fd, p->ai_addr, p->ai_addrlen) == -1) {
-            perror("connecting error");
+            std::perror("connecting error");
             continue;
         }
         break;
     }
 
     if (p == NULL) {
-        fprintf(stderr, "server: failed to connect\n");
-        exit(2);
+        std::cerr << "server: failed to connect\n";
+        std::exit(2);
     }
 
     char server_ip[SIZE];
@@ -56,15 +59,14 @@ void Connection::connect() {
         server_ip,
         sizeof(server_ip)
     );
-    printf("client: connecting to %s\n", server_ip);
+    std::cout << "client: connecting to " << server_ip << std::endl;;
 }
 
 void Connection::start() {
-    init();
     connect();
 
     std::thread send_thread([&] () {
-        for (;;) {
+        while (is_active) {
             std::cout << "Enter message to server: \n";
             std::getline(std::cin, message);
             send();
@@ -72,7 +74,7 @@ void Connection::start() {
     });
 
     std::thread recv_thread([&] () {
-        for (;;) {
+        while (is_active) {
             recieve();
             printMsg();
         }
@@ -82,16 +84,20 @@ void Connection::start() {
     if (recv_thread.joinable()) recv_thread.join();
 }
 
+void Connection::stop() {
+    is_active = false;
+}
+
 void Connection::recieve() {
     std::fill(recv_buf.begin(), recv_buf.end(), 0);
     
     if ((recv_len = ::recv(socket_fd, recv_buf.data(), SIZE, 0)) == -1) {
-        fprintf(stderr, "client recieve error\n");
-        exit(1);
+        std::cerr << "client recieve error\n";
+        stop();
     }
     else if (recv_len == 0) {
-        fprintf(stdout, "The connection was closed by removed hand\n");
-        exit(0);
+        std::cout << "The connection was closed by server\n";
+        stop();
     }
 }
 
@@ -99,15 +105,14 @@ void Connection::send() {
     int sent_len = 0; 
     
     if ((sent_len = ::send(socket_fd, message.c_str(), strlen(message.c_str()), 0)) == -1) {
-        fprintf(stderr, "Client sending error\n");
-        exit(1);
+        std::cerr << "Client sending error\n";
+        stop();
     }
 
 }
 
 void Connection::printMsg() {
-    std::scoped_lock lock(outMtx);
-    printf("Client recieved message: \n");
+    std::cout << "Client recieved message: ";
     for (size_t i = 0; i < recv_len; ++i) {
         printf("%c", recv_buf[i]);
     }

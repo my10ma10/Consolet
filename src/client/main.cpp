@@ -1,10 +1,10 @@
-#include "client.hpp"
+#include "client_session/client_session.hpp"
 
 #define PORT "3490"
 
 int main() {
-    Connection client("127.0.0.1", PORT);
-    client.start();
-    
+    ClientSession session("127.0.0.1", PORT);
+    session.auth();
+    session.start();
     return 0;
 }

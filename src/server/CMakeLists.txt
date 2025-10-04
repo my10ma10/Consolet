@@ -1,6 +1,6 @@
-add_library(session_lib STATIC
-    session/session.cpp 
-    session/session.hpp
+add_library(server_session_lib STATIC
+    server_session/server_session.cpp 
+    server_session/server_session.hpp
 )
     
 add_executable(server 
@@ -10,7 +10,7 @@ add_executable(server
 )
 
 target_link_libraries(server PRIVATE
-    session_lib
+    server_session_lib
     message_lib
     chat_lib
 )
