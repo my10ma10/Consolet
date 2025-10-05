@@ -38,9 +38,8 @@ void Server::init() {
             continue;
         }
 
-        int yes = 1;
-
-        if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
+        int opt = 1;
+        if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(int)) == -1) {
             std::perror("setsockopt error");
             exit(1);
         }

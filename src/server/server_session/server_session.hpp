@@ -12,6 +12,8 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
+#include <poll.h>
+#include <fcntl.h>
 
 #include "user.hpp"
 

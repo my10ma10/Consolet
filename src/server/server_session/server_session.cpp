@@ -19,18 +19,32 @@ void ServerSession::start() {
         });
             
         std::thread send_thread([&] () {
+            int cin_flags = fcntl(STDIN_FILENO, F_GETFL); // get currenct cin status
+            fcntl(STDIN_FILENO, F_SETFL, cin_flags | O_NONBLOCK); // set nonblock status
+            
             while (is_active) {
-                std::cout << "Enter message to client: \n";
-                std::flush(std::cout);
+                struct pollfd pfd;
+                pfd.fd = STDIN_FILENO;
+                pfd.events = POLLIN;
+
+                int res = poll(&pfd, 1, 100);
+
+                if (res > 0 && (pfd.revents & POLLIN)) {
+                    std::cout << "Enter message to client: \n";
+                    std::flush(std::cout);
+                    
+                    if (std::getline(std::cin, message)) {
+                        if (!is_active) break;
+                        send();         
+                    }
+                    
+                    if (std::cin.fail() && !std::cin.eof()) {
+                        std::cin.clear();
+                    }
+                }
                 
-                if (std::getline(std::cin, message)) {
-                    if (!is_active) break;
-                    send();         
-                }
-                else {
-                    break;
-                }
             }
+            fcntl(STDIN_FILENO, F_SETFL, cin_flags);
         });
         
         if (recv_thread.joinable()) recv_thread.join();
@@ -53,7 +67,7 @@ void ServerSession::recieve() {
         return;
     }
     else if (recv_len == 0) {
-        std::cerr << "The connection was closed by client ____\n";
+        std::cerr << "The connection was closed by client " << listen_fd << std::endl;
         std::flush(std::cerr);
         stop();
         return;
