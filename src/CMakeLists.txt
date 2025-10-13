@@ -6,11 +6,21 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/src/message
     ${CMAKE_SOURCE_DIR}/src/server
     ${CMAKE_SOURCE_DIR}/src/usr
+    &{CMAKE_SOURCE_DIR}/src/db
 )
 
 add_library(message_lib STATIC 
     message/message.cpp    
     message/message.hpp  
+)
+
+add_library(db_lib STATIC
+    db/db.cpp
+    db/db.hpp
+)
+
+target_link_libraries(db_lib PUBLIC
+    SQLite::SQLite3
 )
 
 add_library(chat_lib STATIC 
