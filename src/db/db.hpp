@@ -1,18 +1,24 @@
 #pragma once
 #include <sqlite3.h>
 #include <iostream>
-#include <format>
+#include <functional>
 #include <type_traits>
+#include <optional>
 
 class DB {
-    using PreparedStatement = sqlite3_stmt;
-
     sqlite3* db;
 
-    PreparedStatement* stmt;
-
     template <typename T>
-    void bind(unsigned int index, T arg);
+    void bind(sqlite3_stmt* stmt, unsigned int index, T arg);
+
+    template <typename... Args>
+    void bindAll(sqlite3_stmt* stmt, unsigned int index, Args&&... args);
+
+    struct UserRow {
+        int id;
+        std::string name;
+        std::string password;
+    };
 public: 
     ~DB();
 
@@ -20,31 +26,86 @@ public:
     void createDB();
 
     template <typename... Args>
-    void execute(const std::string query, Args&&... args);
+    bool execute(const std::string& query, Args&&... args);
+    
+    template <typename Func, typename... Args>
+    bool executeWithCallback(Func&& func,
+        const std::string& query, Args&&... args);
 
     void addUser(const std::string& name, const std::string& passwordHash);
 
-    bool findUser(const std::string& name);
+    std::optional<UserRow> findUser(const std::string& name);
 };
 
+
 template <typename... Args>
-void DB::execute(const std::string query, Args&&... args) {
-    if (sqlite3_prepare_v2(db, query.data(), -1, &stmt, nullptr) != SQLITE_OK) {
+bool DB::execute(const std::string& query, Args&&... args) {
+    constexpr auto prepareDB = sqlite3_prepare_v2;
+    constexpr auto makeStep = sqlite3_step;
+
+    sqlite3_stmt* stmt;
+    
+    if (prepareDB(db, query.c_str(), -1, &stmt, nullptr) != SQLITE_OK) {
         std::cerr << "Prepating statement error: " << sqlite3_errmsg(db);
+        if (stmt) sqlite3_finalize(stmt);
+        return false;
     }
 
     unsigned int index = 1;
-    (bind(index++, std::forward<Args>(args)), ...);
+    bindAll(stmt, index, std::forward<Args>(args)...);
 
+    int rc = makeStep(stmt);
+    bool execStatus = (rc == SQLITE_DONE || rc == SQLITE_ROW);
+    if (!execStatus) {
+        std::cerr << "Execution error: " << sqlite3_errmsg(db) << std::endl;
+    }
 
-    if (sqlite3_step(stmt) != SQLITE_DONE) {
-        std::cerr << "Insert error: " << sqlite3_errmsg(db) << std::endl;
-    }    
+    return execStatus;    
+}
+
+template <typename Func, typename... Args>
+bool DB::executeWithCallback(
+    Func&& func,
+    const std::string& query, 
+    Args&&... args
+) {
+    constexpr auto prepareDB = sqlite3_prepare_v2;
+    constexpr auto makeStep = sqlite3_step;
+
+    sqlite3_stmt* stmt;
+    
+    if (prepareDB(db, query.c_str(), -1, &stmt, nullptr) != SQLITE_OK) {
+        std::cerr << "Prepating statement error: " << sqlite3_errmsg(db);
+        if (stmt) sqlite3_finalize(stmt);
+        return false;
+    }
+
+    unsigned int index = 1;
+    bindAll(stmt, index, std::forward<Args>(args)...);
+
+    int rc = SQLITE_OK;
+    while ((rc = makeStep(stmt)) == SQLITE_ROW) {
+        if (!std::forward<Func>(func)(stmt)) {
+            break;
+        }
+    }
+    
+    bool execStatus = (rc == SQLITE_DONE || rc == SQLITE_ROW);
+    if (execStatus) {
+        std::cerr << "Execution error: " << sqlite3_errmsg(db) << std::endl;
+    }
+
     sqlite3_finalize(stmt);
+    return execStatus;
+}
+
+template <typename... Args>
+void DB::bindAll(sqlite3_stmt* stmt, unsigned int index, Args&&... args) {
+    (bind(stmt, index++, std::forward<Args>(args)), ...);     
 }
 
 template <typename T>
-void DB::bind(unsigned int index, T arg) {
+void DB::bind(sqlite3_stmt* stmt, unsigned int index, T arg) {
     using DecayedT = std::remove_cvref_t<T>;
     
     if constexpr (std::is_same_v<DecayedT, double>) {

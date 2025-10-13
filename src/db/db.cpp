@@ -51,20 +51,24 @@ void DB::createDB() {
 }
 
 void DB::addUser(const std::string& name, const std::string& passwordHash) {
-    std::string adding_query = std::format(
-        "INSERT INTO User (name, password) VALUES(?, ?)", 
-        name, passwordHash
-    );
+    std::string adding_query = "INSERT INTO User (name, password) VALUES(?, ?)";
     execute(adding_query, name, passwordHash);
 }
 
-bool DB::findUser(const std::string& name) {
-    std::string finding_query = std::format(
-        "SELECT * FROM User WHERE name = '{}';",
-        name
-    );
-    execute(finding_query);
+std::optional<DB::UserRow> DB::findUser(const std::string& name) {
+    std::string finding_query = "SELECT * FROM User WHERE name = ?;";
+    std::optional<DB::UserRow> result;
+    
+    executeWithCallback([&result] (sqlite3_stmt* stmt) {
+        UserRow userRow;
+        userRow.id = sqlite3_column_int(stmt, 0);
+        userRow.name = sqlite3_column_int(stmt, 1);
+        userRow.password = sqlite3_column_int(stmt, 2);
 
-    return true;
+        result = std::move(userRow);
+        return true;
+    }, finding_query, name);
+
+    return result;
     
 }
