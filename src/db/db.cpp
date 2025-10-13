@@ -1,8 +1,4 @@
 #include "db.hpp"
-
-#include <openssl/evp.h>
-#include <openssl/rand.h>
-
 #include <array>
 
 DB::~DB() {
@@ -54,34 +50,12 @@ void DB::createDB() {
     std::cout << "DB created\n";
 }
 
-void DB::execute(const char* sql) {
-    char* errMsg;
-
-    if (sqlite3_exec(db, sql, nullptr, nullptr, &errMsg) != SQLITE_OK) {
-        std::cerr << "Query executing error: " << errMsg << std::endl;
-        sqlite3_free(errMsg);
-    }
-}
-
-void DB::execute(const std::string& sql) {
-    execute(sql.data());
-}
-
-void DB::execute(const char* sql, int (*callback)(void*, int, char**, char**)) {
-    char* errMsg;
-
-    if (sqlite3_exec(db, sql, callback, nullptr, &errMsg)) {
-        std::cerr << "Query executing error: " << errMsg << std::endl;
-        sqlite3_free(errMsg);
-    }
-}
-
-void DB::addUser(const char* name, const char* passwordHash) {
+void DB::addUser(const std::string& name, const std::string& passwordHash) {
     std::string adding_query = std::format(
-        "INSERT INTO users VALUES('{}', '{}')", 
+        "INSERT INTO User (name, password) VALUES(?, ?)", 
         name, passwordHash
     );
-    execute(adding_query);
+    execute(adding_query, name, passwordHash);
 }
 
 bool DB::findUser(const std::string& name) {
