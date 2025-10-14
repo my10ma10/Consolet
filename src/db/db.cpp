@@ -37,6 +37,7 @@ void DB::init()
     for (const auto& q : creaing_query) {
         execute(q);
     }
+    std::cout << "DB created\n";
 }
 
 void DB::createDB() {
@@ -47,7 +48,6 @@ void DB::createDB() {
         sqlite3_close(db);
         exit(1);
     }
-    std::cout << "DB created\n";
 }
 
 void DB::addUser(const std::string& name, const std::string& passwordHash) {
@@ -71,4 +71,15 @@ std::optional<DB::UserRow> DB::findUser(const std::string& name) {
 
     return result;
     
+}
+
+bool DB::prepareExecution(const std::string& query, sqlite3_stmt** stmt) {
+    constexpr auto prepareDB = sqlite3_prepare_v2;
+
+    if (prepareDB(db, query.c_str(), -1, stmt, nullptr) != SQLITE_OK) {
+        std::cerr << "Prepating statement error: " << sqlite3_errmsg(db);
+        if (stmt) sqlite3_finalize(*stmt);
+        return false;
+    }
+    return true;
 }

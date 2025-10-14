@@ -8,12 +8,6 @@
 class DB {
     sqlite3* db;
 
-    template <typename T>
-    void bind(sqlite3_stmt* stmt, unsigned int index, T arg);
-
-    template <typename... Args>
-    void bindAll(sqlite3_stmt* stmt, unsigned int index, Args&&... args);
-
     struct UserRow {
         int id;
         std::string name;
@@ -35,31 +29,35 @@ public:
     void addUser(const std::string& name, const std::string& passwordHash);
 
     std::optional<UserRow> findUser(const std::string& name);
+
+private:
+    template <typename T>
+    void bind(sqlite3_stmt* stmt, unsigned int index, T arg);
+
+    template <typename... Args>
+    void bindAll(sqlite3_stmt* stmt, unsigned int index, Args&&... args);
+
+    bool prepareExecution(const std::string& query, sqlite3_stmt** stmt);
 };
 
 
 template <typename... Args>
 bool DB::execute(const std::string& query, Args&&... args) {
-    constexpr auto prepareDB = sqlite3_prepare_v2;
-    constexpr auto makeStep = sqlite3_step;
-
     sqlite3_stmt* stmt;
     
-    if (prepareDB(db, query.c_str(), -1, &stmt, nullptr) != SQLITE_OK) {
-        std::cerr << "Prepating statement error: " << sqlite3_errmsg(db);
-        if (stmt) sqlite3_finalize(stmt);
-        return false;
-    }
+    bool prepared = prepareExecution(query, &stmt);
+    if (!prepared) return false;
 
     unsigned int index = 1;
     bindAll(stmt, index, std::forward<Args>(args)...);
 
-    int rc = makeStep(stmt);
+    int rc = sqlite3_step(stmt);
     bool execStatus = (rc == SQLITE_DONE || rc == SQLITE_ROW);
     if (!execStatus) {
         std::cerr << "Execution error: " << sqlite3_errmsg(db) << std::endl;
     }
 
+    sqlite3_finalize(stmt);
     return execStatus;    
 }
 
@@ -69,39 +67,35 @@ bool DB::executeWithCallback(
     const std::string& query, 
     Args&&... args
 ) {
-    constexpr auto prepareDB = sqlite3_prepare_v2;
-    constexpr auto makeStep = sqlite3_step;
+    sqlite3_stmt* stmt = nullptr;
 
-    sqlite3_stmt* stmt;
-    
-    if (prepareDB(db, query.c_str(), -1, &stmt, nullptr) != SQLITE_OK) {
-        std::cerr << "Prepating statement error: " << sqlite3_errmsg(db);
-        if (stmt) sqlite3_finalize(stmt);
-        return false;
-    }
+    bool prepared = prepareExecution(query, &stmt);
+    if (!prepared) return false;
 
     unsigned int index = 1;
     bindAll(stmt, index, std::forward<Args>(args)...);
 
     int rc = SQLITE_OK;
-    while ((rc = makeStep(stmt)) == SQLITE_ROW) {
+    while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
         if (!std::forward<Func>(func)(stmt)) {
             break;
         }
     }
     
     bool execStatus = (rc == SQLITE_DONE || rc == SQLITE_ROW);
-    if (execStatus) {
+    if (!execStatus) {
         std::cerr << "Execution error: " << sqlite3_errmsg(db) << std::endl;
     }
 
-    sqlite3_finalize(stmt);
+    if (stmt) sqlite3_finalize(stmt);
     return execStatus;
 }
 
 template <typename... Args>
 void DB::bindAll(sqlite3_stmt* stmt, unsigned int index, Args&&... args) {
-    (bind(stmt, index++, std::forward<Args>(args)), ...);     
+    if constexpr (sizeof... (Args) > 0) {
+        (bind(stmt, index++, std::forward<Args>(args)), ...);
+    }
 }
 
 template <typename T>
@@ -127,3 +121,4 @@ void DB::bind(sqlite3_stmt* stmt, unsigned int index, T arg) {
         throw std::invalid_argument("sqlite3_bind wasn't found\n");
     }
 }
+
