@@ -8,11 +8,13 @@
 class DB {
     sqlite3* db;
 
+public:
     struct UserRow {
         int id;
         std::string name;
         std::string password;
     };
+
 public: 
     ~DB();
 

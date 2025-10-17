@@ -62,15 +62,14 @@ std::optional<DB::UserRow> DB::findUser(const std::string& name) {
     executeWithCallback([&result] (sqlite3_stmt* stmt) {
         UserRow userRow;
         userRow.id = sqlite3_column_int(stmt, 0);
-        userRow.name = sqlite3_column_int(stmt, 1);
-        userRow.password = sqlite3_column_int(stmt, 2);
+        userRow.name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+        userRow.password = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
 
         result = std::move(userRow);
         return true;
     }, finding_query, name);
 
-    return result;
-    
+    return result;    
 }
 
 bool DB::prepareExecution(const std::string& query, sqlite3_stmt** stmt) {
