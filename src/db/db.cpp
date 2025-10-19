@@ -1,5 +1,8 @@
 #include "db.hpp"
 #include <array>
+#include <iterator>
+#include <sstream>
+#include <fstream>
 
 DB::~DB() {
     sqlite3_close(db_);
@@ -21,42 +24,15 @@ DB& DB::operator=(DB&& other) {
     return *this;
 }
 
-void DB::init() {
-    std::array<std::string, 4> creaing_query = {
-        R"(CREATE TABLE IF NOT EXISTS User (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL UNIQUE,
-            password TEXT NOT NULL
-        );)",
-        R"(CREATE TABLE IF NOT EXISTS Chat (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT,
-            type TEXT NOT NULL CHECH(type IN ('personal', 'group')),
-            CHECK((type = 'personal' AND name IS NULL) OR (type = 'group' AND name IS NOT NULL))
-        );)",
-        R"(CREATE TABLE IF NOT EXISTS MessagesHistory (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            FOREIGN KEY (sender_id) INTEGER NOT NULL REFERENCES User(id),
-            FOREIGN KEY (chat_id) INTEGER NOT NULL REFERENCES Chat(id) ON DELETE CASCADE,
-            date_time TEXT NOT NULL DEFAULT (datetime('now')),
-            text TEXT NOT NULL,
-            is_read INTEGER NOT NULL DEFAULT 0
-        );)",
-        R"(CREATE TABLE IF NOT EXISTS ChatMembers (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            FOREIGN KEY (chat_id) INTEGER NOT NULL REFERENCES Chat(id) ON DELETE CASCADE,
-            FOREIGN KEY (user_id) INTEGER NOT NULL REFERENCES User(id) 
-        );)"
-    };
+void DB::init(const std::string& sqlFile) {
+    std::string sql = readSqlQuery(sqlFile);
 
-    createDB();
-    for (const auto& q : creaing_query) {
-        execute(q);
-    }
+    createDB(sql);
+
     std::cout << "DB created\n";
 }
 
-void DB::createDB() {
+void DB::createDB(const std::string& sql) {
     sqlite3_config(SQLITE_CONFIG_MULTITHREAD);
     
     if (sqlite3_open("database.db", &db_) != SQLITE_OK) {
@@ -64,6 +40,7 @@ void DB::createDB() {
         sqlite3_close(db_);
         exit(1);
     }
+    execute(sql);
 }
 
 void DB::addUser(const std::string& name, const std::string& passwordHash) {
@@ -109,7 +86,22 @@ void DB::deleteChat(ID_t chatID) {
     execute("DELETE FROM Chat WHERE id = ?", chatID);
 }
 
-bool DB::chatExists(ID_t user1, ID_t user2) {
+std::string DB::readSqlQuery(const std::string& filename) {
+    std::stringstream buffer;
+    std::ifstream file(filename);
+
+    if (!file.is_open()) {
+        std::cerr << "Error: can not open query SQL file " << filename << std::endl;
+    }
+
+    return std::string(
+        std::istreambuf_iterator<char>(file),
+        std::istreambuf_iterator<char>()
+    );
+}
+
+bool DB::chatExists(ID_t user1, ID_t user2)
+{
     bool exists = false;
 
     executeWithCallback([&exists] (sqlite3_stmt* stmt) {

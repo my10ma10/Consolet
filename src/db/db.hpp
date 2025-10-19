@@ -8,11 +8,6 @@
 
 using ID_t = std::size_t;
 
-enum class ChatType { 
-    Personal,
-    Group
-};
-
 class DB {
     sqlite3* db_;
     std::mutex executionMutex_;
@@ -34,8 +29,8 @@ public:
     DB(DB&& other);
     DB& operator=(DB&& other);
 
-    void init();
-    void createDB();
+    void init(const std::string& sqlFile);
+    void createDB(const std::string& sql);
 
     template <typename... Args>
     bool execute(const std::string& query, Args&&... args);
@@ -56,6 +51,8 @@ public:
     void deleteMessage(ID_t chatID, ID_t msgID);
 
 private:
+    std::string readSqlQuery(const std::string& filename);
+
     bool chatExists(ID_t user1, ID_t user2);
     
     template <typename T>
