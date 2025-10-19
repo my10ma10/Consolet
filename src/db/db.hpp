@@ -4,9 +4,18 @@
 #include <functional>
 #include <type_traits>
 #include <optional>
+#include <mutex>
+
+using ID_t = std::size_t;
+
+enum class ChatType { 
+    Personal,
+    Group
+};
 
 class DB {
-    sqlite3* db;
+    sqlite3* db_;
+    std::mutex executionMutex_;
 
 public:
     struct UserRow {
@@ -15,8 +24,15 @@ public:
         std::string password;
     };
 
-public: 
+public:
+    DB() = default;
     ~DB();
+
+    DB(const DB& other) = delete;
+    DB& operator=(const DB& other) = delete;
+
+    DB(DB&& other);
+    DB& operator=(DB&& other);
 
     void init();
     void createDB();
@@ -29,10 +45,19 @@ public:
         const std::string& query, Args&&... args);
 
     void addUser(const std::string& name, const std::string& passwordHash);
-
     std::optional<UserRow> findUser(const std::string& name);
 
+    void createChat(ID_t user1, ID_t user2, const std::string& type, 
+            const std::string& chatName = {});
+    void addMessage(ID_t chatID, ID_t senderID, 
+            ID_t recieverID, const std::string& msg);
+
+    void deleteChat(ID_t chatID);
+    void deleteMessage(ID_t chatID, ID_t msgID);
+
 private:
+    bool chatExists(ID_t user1, ID_t user2);
+    
     template <typename T>
     void bind(sqlite3_stmt* stmt, unsigned int index, T arg);
 
@@ -45,6 +70,7 @@ private:
 
 template <typename... Args>
 bool DB::execute(const std::string& query, Args&&... args) {
+    std::scoped_lock<std::mutex> lock(executionMutex_);
     sqlite3_stmt* stmt;
     
     bool prepared = prepareExecution(query, &stmt);
@@ -56,7 +82,7 @@ bool DB::execute(const std::string& query, Args&&... args) {
     int rc = sqlite3_step(stmt);
     bool execStatus = (rc == SQLITE_DONE || rc == SQLITE_ROW);
     if (!execStatus) {
-        std::cerr << "Execution error: " << sqlite3_errmsg(db) << std::endl;
+        std::cerr << "Execution error: " << sqlite3_errmsg(db_) << std::endl;
     }
 
     sqlite3_finalize(stmt);
@@ -69,6 +95,7 @@ bool DB::executeWithCallback(
     const std::string& query, 
     Args&&... args
 ) {
+    std::scoped_lock<std::mutex> lock(executionMutex_);
     sqlite3_stmt* stmt = nullptr;
 
     bool prepared = prepareExecution(query, &stmt);
@@ -86,7 +113,7 @@ bool DB::executeWithCallback(
     
     bool execStatus = (rc == SQLITE_DONE || rc == SQLITE_ROW);
     if (!execStatus) {
-        std::cerr << "Execution error: " << sqlite3_errmsg(db) << std::endl;
+        std::cerr << "Execution error: " << sqlite3_errmsg(db_) << std::endl;
     }
 
     if (stmt) sqlite3_finalize(stmt);
