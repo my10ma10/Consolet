@@ -5,6 +5,7 @@
 ### C++ ###
 # Build
 build/
+out/
 
 # Prerequisites
 *.d
@@ -87,6 +88,7 @@ CMakeUserPresets.json
 .vs/
 .vscode/*
 .vscode/
+.vs/
 .vscode/settings.json
 .vscode/tasks.json
 .vscode/launch.json
