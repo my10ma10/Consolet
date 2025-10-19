@@ -84,6 +84,7 @@ CMakeUserPresets.json
 *.wps
 
 ### VisualStudioCode ###
+.vs/
 .vscode/*
 .vscode/
 .vscode/settings.json
