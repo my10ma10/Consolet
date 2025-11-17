@@ -1,8 +1,13 @@
 #include "db.hpp"
+#include "user.hpp"
+#include "chat.hpp"
+#include "message.hpp"
+
 #include <array>
 #include <iterator>
-#include <sstream>
+#include <functional>
 #include <fstream>
+#include <sstream>
 
 DB::~DB() {
     sqlite3_close(db_);
@@ -24,61 +29,213 @@ DB& DB::operator=(DB&& other) {
     return *this;
 }
 
-void DB::init(const std::string& sqlFile) {
-    std::string sql = readSqlQuery(sqlFile);
+void DB::init(const std::string& db_name, const std::string& sqlFile) {
+    std::vector<std::string> sql = readSqlQuery(sqlFile);
 
-    createDB(sql);
-
-    std::cout << "DB created\n";
+    createDB(db_name, sql);
 }
 
-void DB::createDB(const std::string& sql) {
+void DB::createDB(const std::string& db_name, const std::vector<std::string>& sql) {
     sqlite3_config(SQLITE_CONFIG_MULTITHREAD);
     
-    if (sqlite3_open("database.db", &db_) != SQLITE_OK) {
+    if (sqlite3_open(db_name.c_str(), &db_) != SQLITE_OK) {
         std::cerr << "Error: cannot open db: " << sqlite3_errmsg(db_) << std::endl;
         sqlite3_close(db_);
-        exit(1);
-    }
-    execute(sql);
-}
-
-void DB::addUser(const std::string& name, const std::string& passwordHash) {
-    std::string adding_query = "INSERT INTO User (name, password) VALUES(?, ?)";
-    execute(adding_query, name, passwordHash);
-}
-
-std::optional<DB::UserRow> DB::findUser(const std::string& name) {
-    std::string finding_query = "SELECT * FROM User WHERE name = ?;";
-    std::optional<DB::UserRow> result;
-    
-    executeWithCallback([&result] (sqlite3_stmt* stmt) {
-        UserRow userRow;
-        userRow.id = sqlite3_column_int(stmt, 0);
-        userRow.name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
-        userRow.password = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
-
-        result = std::move(userRow);
-        return true;
-    }, finding_query, name);
-
-    return result;    
-}
-
-void DB::addMessage(
-    ID_t chatID, 
-    ID_t senderID, 
-    ID_t recieverID, 
-    const std::string& msg
-) {
-    if (!chatExists(senderID, recieverID)) {
-        createChat(senderID, recieverID, "personal");
+        throw std::runtime_error("Failed to open database");
     }
     
+    execute("PRAGMA foreign_keys = ON;");
+
+    if (!sql.empty()) {
+        for (const auto& query : sql) 
+            execute(query);
+    }
+    else {
+        std::cerr << "Error: sql query was not executed" << std::endl;
+    }
+}
+
+std::vector<std::string> DB::readSqlQuery(const std::string& filename) {
+    std::vector<std::string> res(4, std::string{});
+    std::ifstream file(filename);
+
+    if (!file.is_open()) {
+        std::cerr << "Error: can not open query SQL file " << filename << std::endl;
+        return {};
+    }
+
+    std::string line;
+    while (std::getline(file, line, ';')) {
+        res.emplace_back(line);
+    }
+
+    return res;
+}
+
+ssize_t DB::getTableSize(const std::string& tableName) {
+    std::optional<ssize_t> res;
+    executeWithCallback(
+        [this, &res] (sqlite3_stmt* stmt) {
+            res = sqlite3_column_int64(stmt, 0);
+            return false;
+        },
+        std::string("SELECT COUNT(*) FROM ") + tableName
+    );
+
+    if (!res.has_value()) {
+        throw std::invalid_argument("Empty res");
+    }
+    return res.value();
+}
+
+bool DB::save(User &user)
+{
+    bool res = execute(
+        "INSERT INTO User (name, password) VALUES(?, ?)", 
+        user.getName(), user.getPassword()
+    );
+
+    user.setID(sqlite3_last_insert_rowid(db_));
+
+    return res;
+}
+
+void DB::addMemberToChat(ID_t chatId, ID_t userID) {
+    auto user = findUser(userID);
+    if (!user.has_value()) {
+        std::cerr << "Error: user not found" << std::endl;
+    }
+
     execute(
-        "INSERT INTO MessagesHistory (sender_id, chat_id, text) \
-            VALUES (?, ?, ?)",
-            senderID, chatID, msg
+        "INSERT INTO User (name, password) VALUES(?, ?)", 
+        user->getName(), user->getPassword()
+    );
+
+    execute(
+        "INSERT INTO ChatMembers (chat_id, user_id) VALUES(?, ?)",
+        chatId, userID
+    );
+}
+
+std::optional<User> DB::findUser(const std::string& name) {
+    ID_t id;
+    std::string password;
+    
+    executeWithCallback([&] (sqlite3_stmt* stmt) {
+        id = sqlite3_column_int(stmt, 0);
+        password = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+
+        return true;
+    }, 
+    "SELECT id, password FROM User WHERE name = ?;", name);
+
+    return std::make_optional<User>(name, password, id);    
+}
+
+std::optional<User> DB::findUser(ID_t id) {
+    std::string name;
+    std::string password;
+
+    executeWithCallback([&] (sqlite3_stmt* stmt) {
+        name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+        password = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+
+        return true;
+    }, 
+    "SELECT name, password FROM User WHERE id = ?", id);
+
+    return std::make_optional<User>(name, password, id);
+}
+
+bool DB::save(Message& message) {
+    if (!chatExists(message.getChatID())) {
+        // stub - need to change
+        std::cerr << "Chat not exists\n";
+    }
+
+    bool res = execute(
+        "INSERT INTO MessagesHistory (sender_id, chat_id, text) VALUES (?, ?)",
+        message.getSenderID(), message.getChatID(), message.getText() 
+    );
+
+    return res;
+}
+
+bool DB::chatExists(ID_t chatID) {
+    bool exists = false;
+
+    executeWithCallback([&exists] (sqlite3_stmt* stmt) {
+            exists = sqlite3_column_int(stmt, 0);
+            return true;
+        },
+        "SELECT 1 FROM Chat WHERE id = ?", chatID
+    );
+        
+    return exists;
+}
+
+bool DB::save(Chat& chat) {
+    execute(
+        "INSERT INTO Chat (name, type) VALUES (?, ?)", 
+        chat.getName(), chat.getType()
+    );
+    chat.setID(sqlite3_last_insert_rowid(db_));
+    return true;
+}
+
+void DB::createChat(
+    std::vector<User> users,
+    ChatType type,
+    const std::string& chatName)
+{
+    assert(!chatName.empty() && type == ChatType::Type::PERSONAL && \
+            "Chat is personal but has a name");
+
+    execute(
+        "INSERT INTO Chat (name, type) VALUES (?, ?);", 
+        chatName, type.toString()
+    );
+
+    ID_t newChatID = static_cast<ID_t>(sqlite3_last_insert_rowid(db_));
+    
+    for (const auto& user : users) {
+        execute(
+            "INSERT INTO ChatMembers (chat_id, user_id) VALUES (?, ?);", 
+            newChatID, user.getID()
+        );
+    }
+}
+
+std::unique_ptr<Chat> DB::findChat(ID_t chatId) {
+    std::string chatType;
+    std::string chatName;
+    std::vector<ID_t> usersId;
+
+    executeWithCallback([&] (sqlite3_stmt* stmt) {
+        chatType = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+        chatName = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+
+        usersId.emplace_back(sqlite3_column_int64(stmt, 2));
+        return true;
+    }, 
+    R"(SELECT 
+        c.type AS c_type,
+        c.name AS c_name,
+        u.id AS u_id,
+    FROM Chat c
+    JOIN ChatMembers cm ON cm.chat_id = c.id
+    JOIN User u ON u.id = cm.user_id
+    WHERE c.id = ?;)", chatId);
+
+
+    if (chatType == "personal") {
+        if (usersId.size() != 2)
+            std::cerr << "Invalid member count for personal chat\n";
+    }
+    return std::make_unique<Chat>(
+        shared_from_this(),
+        usersId,
+        chatName
     );
 }
 
@@ -86,64 +243,19 @@ void DB::deleteChat(ID_t chatID) {
     execute("DELETE FROM Chat WHERE id = ?", chatID);
 }
 
-std::string DB::readSqlQuery(const std::string& filename) {
-    std::stringstream buffer;
-    std::ifstream file(filename);
-
-    if (!file.is_open()) {
-        std::cerr << "Error: can not open query SQL file " << filename << std::endl;
-    }
-
-    return std::string(
-        std::istreambuf_iterator<char>(file),
-        std::istreambuf_iterator<char>()
-    );
-}
-
-bool DB::chatExists(ID_t user1, ID_t user2)
-{
-    bool exists = false;
-
-    executeWithCallback([&exists] (sqlite3_stmt* stmt) {
-            exists = sqlite3_column_int(stmt, 0);
-            return false;
-        },
-        R"(
-            SELECT COUNT(DISTINCT user_id) = 2 
-            FROM ChatMembers 
-            WHERE user_id IN (?, ?)
-        )", user1, user2
-    );
-        
-    return exists;
-}
-
-void DB::createChat(
-    ID_t user1, 
-    ID_t user2, 
-    const std::string& type, 
-    const std::string& chatName
-) {    
-    std::string creating_chat_query = \
-    "INSERT INTO Chat (name, type) VALUES (NULL, ?);";
-
-    execute(creating_chat_query, std::string{}, "personal");
-
-    ID_t newChatID = static_cast<ID_t>(sqlite3_last_insert_rowid(db_));
-
-    std::string adding_members_query = \
-    "INSERT INTO ChatMembers (chat_id, user_id) VALUES (?, ?);";
-    execute(adding_members_query, newChatID, user1);
-    execute(adding_members_query, newChatID, user2);
-
+void DB::dropAllTables(const std::string& file_with_drop_query) {
+    std::vector<std::string> drop_sql = readSqlQuery(file_with_drop_query);
+    for (const auto& query : drop_sql)
+        execute(query);
 }
 
 bool DB::prepareExecution(const std::string& query, sqlite3_stmt** stmt) {
-    if (sqlite3_prepare_v2(db_, query.c_str(), -1, stmt, nullptr) != SQLITE_OK) {
-        std::cerr << "Prepating statement error: " << sqlite3_errmsg(db_) << std::endl;
+    const char* errMsg = nullptr;
+    if (sqlite3_prepare_v2(db_, query.c_str(), -1, stmt, &errMsg) != SQLITE_OK) {
+        std::cerr << "Preparing statement error: " << sqlite3_errmsg(db_) << std::endl;
 
         if (*stmt) sqlite3_finalize(*stmt);
-        return false;
+        throw std::runtime_error(std::string("Preparing statement error: ") + errMsg);
     }
     return true;
 }

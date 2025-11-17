@@ -28,6 +28,10 @@ add_library(chat_lib STATIC
     chat/chat.hpp
 )
 
+add_library(user_lib STATIC
+    usr/user.cpp
+    usr/user.hpp
+)
 
 add_subdirectory(server)
 add_subdirectory(client)

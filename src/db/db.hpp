@@ -1,23 +1,25 @@
 #pragma once
 #include <sqlite3.h>
+#include <cassert>
 #include <iostream>
-#include <functional>
 #include <type_traits>
 #include <optional>
+#include <memory>
 #include <mutex>
+#include <vector>
 
-using ID_t = std::size_t;
+#include "chat/chat_type.hpp"
 
-class DB {
+using ID_t = int64_t;
+
+class User;
+class Chat;
+class Message;
+
+class DB : public std::enable_shared_from_this<DB> {
+protected:
     sqlite3* db_;
     std::mutex executionMutex_;
-
-public:
-    struct UserRow {
-        int id;
-        std::string name;
-        std::string password;
-    };
 
 public:
     DB() = default;
@@ -29,8 +31,7 @@ public:
     DB(DB&& other);
     DB& operator=(DB&& other);
 
-    void init(const std::string& sqlFile);
-    void createDB(const std::string& sql);
+    void init(const std::string& db_name, const std::string& sqlFile);
 
     template <typename... Args>
     bool execute(const std::string& query, Args&&... args);
@@ -39,21 +40,38 @@ public:
     bool executeWithCallback(Func&& func,
         const std::string& query, Args&&... args);
 
-    void addUser(const std::string& name, const std::string& passwordHash);
-    std::optional<UserRow> findUser(const std::string& name);
+    ssize_t getTableSize(const std::string& tableName); 
 
-    void createChat(ID_t user1, ID_t user2, const std::string& type, 
+    // -- User --
+    bool save(User& user);
+    void addMemberToChat(ID_t chatId, ID_t userID);
+
+    std::optional<User> findUser(const std::string& name);
+    std::optional<User> findUser(ID_t id);
+    
+    // -- Message --
+    bool save(Message& message);
+
+    void deleteMessage(ID_t msgID);
+
+
+    // -- Chat --
+    bool save(Chat& chat);
+    void createChat(std::vector<User> users, ChatType type, 
             const std::string& chatName = {});
-    void addMessage(ID_t chatID, ID_t senderID, 
-            ID_t recieverID, const std::string& msg);
+
+    std::unique_ptr<Chat> findChat(ID_t id);
 
     void deleteChat(ID_t chatID);
-    void deleteMessage(ID_t chatID, ID_t msgID);
-
+    
 private:
-    std::string readSqlQuery(const std::string& filename);
+    void createDB(const std::string& db_name, const std::vector<std::string>& sql);
 
-    bool chatExists(ID_t user1, ID_t user2);
+    void dropAllTables(const std::string& dropQuery);
+
+    std::vector<std::string> readSqlQuery(const std::string& filename);
+
+    bool chatExists(ID_t chatID);
     
     template <typename T>
     void bind(sqlite3_stmt* stmt, unsigned int index, T arg);
@@ -67,7 +85,12 @@ private:
 
 template <typename... Args>
 bool DB::execute(const std::string& query, Args&&... args) {
+    if (!db_) {
+        throw std::runtime_error("Database not initialized");
+    }
+
     std::scoped_lock<std::mutex> lock(executionMutex_);
+
     sqlite3_stmt* stmt;
     
     bool prepared = prepareExecution(query, &stmt);
@@ -77,7 +100,7 @@ bool DB::execute(const std::string& query, Args&&... args) {
     bindAll(stmt, index, std::forward<Args>(args)...);
 
     int rc = sqlite3_step(stmt);
-    bool execStatus = (rc == SQLITE_DONE || rc == SQLITE_ROW);
+    bool execStatus = (rc != SQLITE_DONE || rc != SQLITE_ROW);
     if (!execStatus) {
         std::cerr << "Execution error: " << sqlite3_errmsg(db_) << std::endl;
     }
@@ -140,7 +163,10 @@ void DB::bind(sqlite3_stmt* stmt, unsigned int index, T arg) {
     else if constexpr (std::is_same_v<DecayedT, const char*> || std::is_same_v<DecayedT, char*>) {
         sqlite3_bind_text(stmt, index, arg, -1, SQLITE_STATIC);
     }
-    else if constexpr (std::is_same_v<DecayedT, nullptr_t>) {
+    else if constexpr (
+                std::is_same_v<DecayedT, nullptr_t> ||
+                std::is_same_v<DecayedT, std::nullopt_t>
+        ) {
         sqlite3_bind_null(stmt, index);
     }
     else {
