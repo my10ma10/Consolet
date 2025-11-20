@@ -13,18 +13,43 @@ public:
 private:
     Type type_;
 
-    const std::unordered_map<Type, std::string> map_ = {
-        {Type::PERSONAL, "personal"},
-        {Type::GROUP, "group"},
-        {Type::UNKNOWN, nullptr}
-    };
+    static const std::unordered_map<Type, std::string>& getTypeToStringMap() {
+        static const std::unordered_map<Type, std::string> map = {
+            {Type::PERSONAL, "personal"},
+            {Type::GROUP, "group"},
+            {Type::UNKNOWN, "unknown"}
+        };
+        return map;
+    }
+    
+    static const std::unordered_map<std::string, Type>& getStringToTypeMap() {
+        static const std::unordered_map<std::string, Type> map = {
+            {"personal", Type::PERSONAL},
+            {"group", Type::GROUP},
+            {"unknown", Type::UNKNOWN}
+        };
+        return map;
+    }
 
 public:
+    ChatType() : type_(Type::UNKNOWN) {}
     ChatType(Type type) : type_(type) {}
-
-    std::string toString() {
-        return map_.at(type_);
+    ChatType(const std::string& str_type) : type_(fromString(str_type)) {}
+    
+    
+    static std::string toString(Type type) {
+        return getTypeToStringMap().at(type);
     }
+
+    static Type fromString(const std::string& str) {
+        return getStringToTypeMap().at(str);
+    }
+
+    std::string toString() const {
+        return toString(type_);
+    }
+
+    Type getType() const { return type_; }
 
     bool operator==(const ChatType& other) const { 
         return type_ == other.type_; 
@@ -32,5 +57,5 @@ public:
     bool operator!=(const ChatType& other) const { 
         return type_ != other.type_;
     }
-
+    
 };
