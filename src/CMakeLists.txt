@@ -6,13 +6,16 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/src/message
     ${CMAKE_SOURCE_DIR}/src/server
     ${CMAKE_SOURCE_DIR}/src/usr
-    &{CMAKE_SOURCE_DIR}/src/db
+    ${CMAKE_SOURCE_DIR}/src/db
 )
 
 add_library(message_lib STATIC 
     message/message.cpp    
     message/message.hpp  
 )
+
+target_compile_options(message_lib PRIVATE --coverage -O0 -g)
+target_link_options(message_lib PRIVATE --coverage)
 
 add_library(db_lib STATIC
     db/db.cpp
