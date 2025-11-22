@@ -22,7 +22,7 @@ public:
     friend class DBTest;
 
 protected:
-    sqlite3* db_;
+    sqlite3* db_ = nullptr;
     std::mutex executionMutex_;
 
 public:
@@ -32,8 +32,8 @@ public:
     DB(const DB& other) = delete;
     DB& operator=(const DB& other) = delete;
 
-    DB(DB&& other);
-    DB& operator=(DB&& other);
+    DB(DB&& other) noexcept;
+    DB& operator=(DB&& other) noexcept;
 
     void init(const std::string& db_name, const std::string& sqlFile);
 
@@ -44,11 +44,10 @@ public:
     bool executeWithCallback(Func&& func,
         const std::string& query, Args&&... args);
 
+    
     // -- User --
     bool save(User& user);
     bool save(User&& user);
-
-    void addMemberToChat(ID_t chatId, ID_t userID);
 
     std::optional<User> findUser(const std::string& name);
     std::optional<User> findUser(ID_t id);
@@ -59,6 +58,7 @@ public:
     bool save(Message&& message);
 
     std::optional<Message> findMessage(ID_t chatID, ID_t msgID);
+    std::optional<Message> findMessage(ID_t chatID, const std::string& text);
 
     bool deleteMessage(ID_t chatID, ID_t msgID);
 
@@ -68,13 +68,19 @@ public:
     bool save(Chat&& chat);
 
     std::optional<Chat> findChat(ID_t id);
+    std::optional<Chat> findChat(const std::string& name);
 
-    void deleteChat(ID_t chatID);
+    bool deleteChat(ID_t chatID);
     
 private:
-    void createDB(const std::string& db_name, const std::vector<std::string>& sql);
+    void addMemberToChat(ID_t userID, ID_t chatId);
 
-    void dropAllTables(const std::string& dropQuery);
+    std::optional<Chat> makePulledChat(
+        std::vector<ID_t>& userIDs, const std::string& chatType, 
+        const std::optional<std::string>& chatName, ID_t chatID
+    );
+    
+    void createDB(const std::string& db_name, const std::vector<std::string>& sql);
 
     std::vector<std::string> readSqlQuery(const std::string& filename);
 
@@ -112,7 +118,6 @@ bool DB::execute(const std::string& query, Args&&... args) {
     if (!success) {
         std::cerr << "SQLite step failed (rc = " << rc << "): "
               << sqlite3_errstr(rc) << " | " << sqlite3_errmsg(db_) << std::endl;
-        
     }
 
     sqlite3_finalize(stmt);
@@ -149,7 +154,6 @@ bool DB::executeWithCallback(
         std::cerr << "Execution error: " << sqlite3_errmsg(db_) << std::endl;
     }
     if (rc == SQLITE_ERROR || rc == SQLITE_MISUSE || rc == SQLITE_CONSTRAINT) {
-        std::cerr << "";
         sqlite3_finalize(stmt);
         return false;
     }

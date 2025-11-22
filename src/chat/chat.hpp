@@ -8,16 +8,15 @@
 #include "chat_type.hpp"
 
 class Chat {
-public: 
+public:
     friend class DB;
-
 private: 
     std::shared_ptr<DB> db_ = nullptr;
     std::vector<ID_t> userIDs_;
     std::optional<std::string> name_;
 
     ChatType type_ = ChatType::Type::UNKNOWN;
-    ID_t chatID_;
+    std::optional<ID_t> chatID_{0};
 
 public:
     Chat() = default;
@@ -46,7 +45,7 @@ public:
     std::string getStringType() const { return type_.toString(); }
     ChatType::Type getType() const { return type_.getType(); }
     std::optional<std::string> getName() const { return name_; }
-    ID_t getID() const { return chatID_; }
+    std::optional<ID_t> getID() const { return chatID_; }
 
     bool operator==(const Chat& other) const = default;
 };

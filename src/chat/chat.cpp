@@ -11,19 +11,34 @@ Chat::Chat(
     : db_(db), name_(name), type_(type)
 {
     if (users.empty()) 
-        throw std::logic_error("There are no users to add in chat constructor");
+        throw std::invalid_argument("There are no users to add in chat constructor");
     
-    if (type == ChatType::Type::PERSONAL && users.size() != 2) 
-        throw std::invalid_argument(std::string("Personal chat has no ") + std::to_string(users.size()) + " != 2 users");
+    if (type == ChatType::Type::PERSONAL) {
+        if (users.size() != 2) {
+            throw std::invalid_argument("Personal chat must has 2, not " + \
+                std::to_string(users.size()) + " users");
+        }
+        if (name) {
+            throw std::invalid_argument("Chat is personal but has a name");
+        }
+    }
+    else if (type == ChatType::Type::GROUP) {
+        if (!name.has_value() || name.value().empty()) 
+            throw std::invalid_argument("Chat is group but has no name");
+        if (db_->findChat(*name).has_value()) {
+            throw std::invalid_argument("Chat with with this name already exists");
+        }
+    }
 
     std::for_each(users.begin(), users.end(), [this] (User& user)
     {
-        if (user.isSavedToDB()) {
-            userIDs_.emplace_back(user.getID());
+        if (user.getID()) {
+            userIDs_.emplace_back(*user.getID());
         }
         else {
-            std::cout << "User is not saved in DB" << std::endl;
+            std::cout << "User is not saved in DB - saving..." << std::endl;
             db_->save(user);
+            std::cout << "Now user saved" << std::endl;
         }
     });
 }
@@ -36,7 +51,7 @@ Chat::Chat(
     : db_(db), userIDs_(userIDs), name_(name), type_(type)
 {
     if (userIDs.empty()) 
-        throw std::logic_error("There are no users to add in chat constructor");
+        throw std::invalid_argument("There are no users to add in chat constructor");
     
     if (type == ChatType::Type::PERSONAL && userIDs.size() != 2) 
         throw std::invalid_argument(std::string("Personal chat has no ") + std::to_string(userIDs.size()) + " != 2 users");

@@ -10,19 +10,26 @@
 #include <sstream>
 
 DB::~DB() {
-    sqlite3_close(db_);
+    int res = sqlite3_close(db_);
+    if (res != SQLITE_OK) {
+        std::cerr << "SQLite3 close error" << std::endl;
+    }
+    db_ = nullptr;
 }
 
-DB::DB(DB&& other) {
-    db_ = other.db_;
+DB::DB(DB&& other) noexcept : db_(other.db_) {
     other.db_ = nullptr;
 }
 
-DB& DB::operator=(DB&& other) {
+DB& DB::operator=(DB&& other) noexcept {
     if (this != &other) {
         if (db_) {
-            sqlite3_close(db_);
+            int res = sqlite3_close(db_);
+            if (res != SQLITE_OK) {
+                std::cerr << "SQLite3 close error" << std::endl;
+            }
         }
+        
         db_ = other.db_;
         other.db_ = nullptr;
     }
@@ -36,12 +43,11 @@ void DB::init(const std::string& db_name, const std::string& sqlFile) {
 }
 
 void DB::createDB(const std::string& db_name, const std::vector<std::string>& sql) {
-    sqlite3_config(SQLITE_CONFIG_MULTITHREAD);
-    
     if (sqlite3_open(db_name.c_str(), &db_) != SQLITE_OK) {
         std::cerr << "Error: cannot open db: " << sqlite3_errmsg(db_) << std::endl;
         sqlite3_close(db_);
-        throw std::runtime_error("Failed to open database");
+        db_ = nullptr;
+        throw std::logic_error("Failed to open database");
     }
     
     execute("PRAGMA foreign_keys = ON;");
@@ -52,7 +58,8 @@ void DB::createDB(const std::string& db_name, const std::vector<std::string>& sq
         }
     }
     else {
-        std::cerr << "Error: sql query was not executed" << std::endl;
+        db_ = nullptr;
+        throw std::logic_error("Create query was not executed");
     }
 }
 
@@ -117,7 +124,7 @@ bool DB::save(User&& user) {
     return res;
 }
 
-void DB::addMemberToChat(ID_t chatId, ID_t userID) {
+void DB::addMemberToChat(ID_t userID, ID_t chatID) {
     auto user = findUser(userID);
     if (!user.has_value()) {
         std::cerr << "Error: user not found" << std::endl;
@@ -129,8 +136,29 @@ void DB::addMemberToChat(ID_t chatId, ID_t userID) {
 
     execute(
         "INSERT INTO ChatMembers (chat_id, user_id) VALUES(?, ?)",
-        chatId, userID
+        chatID, userID
     );
+}
+
+std::optional<Chat> DB::makePulledChat(
+    std::vector<ID_t>& userIDs, const std::string& chatType, 
+    const std::optional<std::string>& chatName, ID_t chatID
+) {
+    if (chatType.empty()) return std::nullopt;
+
+    if (userIDs.empty()) {  
+        throw std::invalid_argument("Can not find chat members - usersIDs is empty");
+    }
+
+    auto pulled_chat = std::make_optional<Chat>(
+        shared_from_this(),
+        userIDs,
+        ChatType::fromString(chatType),
+        chatName
+    );
+    pulled_chat->setID(chatID);
+    
+    return pulled_chat;
 }
 
 std::optional<User> DB::findUser(const std::string& name) {
@@ -181,36 +209,55 @@ bool DB::save(Message& message) {
 }
 
 bool DB::save(Message&& message) {
-    if (!chatExistsInDB(message.getChatID())) {
-        std::cerr << "Save message error: chat does not exists\n";
-        return false;
-    }
-
-    bool res = execute(
-        "INSERT INTO MessagesHistory (sender_id, chat_id, text) VALUES (?, ?, ?)",
-        message.getSenderID(), message.getChatID(), message.getText() 
-    );
-    return res;
+    return save(message);
 }
 
 std::optional<Message> DB::findMessage(ID_t chatID, ID_t msgID) {
     std::string text;
-    ID_t senderID;
+    ID_t senderID = 0;
 
-    bool exec_res = executeWithCallback([&] (sqlite3_stmt* stmt) {
+    bool exec_res = executeWithCallback([&] (sqlite3_stmt* stmt) -> bool {
         senderID = sqlite3_column_int64(stmt, 0);
         text = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
         return true;
     }, 
-        "SELECT sender_id, text FROM  MessagesHistory WHERE chat_id = ? AND id = ?",
+        "SELECT sender_id, text FROM MessagesHistory WHERE chat_id = ? AND id = ?",
         chatID, msgID
     );
 
+    if (!exec_res || !senderID || text.empty()) {
+        std::cerr << "Message not found\n";
+        return std::nullopt;
+    }
+
     Message msg(chatID, senderID, text);
-    if (!msg.isSavedToDB() && exec_res)
-        msg.setID(msgID);
+    msg.setID(msgID);
 
     return std::make_optional<Message>(std::move(msg));
+}
+
+std::optional<Message> DB::findMessage(ID_t chatID, const std::string& text) {
+    ID_t senderID = 0;
+    ID_t msgID = 0;
+
+    bool exec_res = executeWithCallback([&] (sqlite3_stmt* stmt) -> bool {
+        senderID = sqlite3_column_int64(stmt, 0);
+        msgID = sqlite3_column_int64(stmt, 1);
+        return true;
+    },
+        "SELECT sender_id, id FROM MessagesHistory WHERE chat_id = ? AND text = ?", 
+        chatID, text
+    );
+
+    if (!exec_res || !(senderID || msgID)) {
+        std::cerr << "Message not found\n";
+        return std::nullopt;
+    }
+
+    Message msg(chatID, senderID, text);
+    msg.setID(msgID);
+
+    return std::make_optional<Message>(msg);
 }
 
 bool DB::deleteMessage(ID_t chatID, ID_t msgID) {
@@ -238,17 +285,9 @@ bool DB::chatExistsInDB(ID_t chatID) {
 }
 
 bool DB::save(Chat& chat) {
-    if (chatExistsInDB(chat.getID())) {
+    if (chat.getID() && chatExistsInDB(*chat.getID())) {
+        std::cerr << "Chat exists in DB - return without pulling\n";
         return true;
-    }
-
-    if (chat.getType() == ChatType::Type::PERSONAL && chat.getName().has_value()) 
-        throw std::invalid_argument("Chat is personal but has a name");
-    
-    if (chat.getType() == ChatType::Type::GROUP 
-            && (!chat.getName().has_value() || chat.getName().value().empty())
-    ) {
-        throw std::invalid_argument("Chat is group but has no name");
     }
     
     bool exec_res = execute(
@@ -259,7 +298,7 @@ bool DB::save(Chat& chat) {
     if (exec_res) chat.setID(sqlite3_last_insert_rowid(db_));
 
     for (const auto& userID : chat.userIDs_) {
-        addMemberToChat(chat.getID(), userID);
+        addMemberToChat(userID, *chat.getID());
     }
     return exec_res;
 }
@@ -268,27 +307,23 @@ bool DB::save(Chat&& chat) {
     return save(chat); 
 }
 
-std::optional<Chat> DB::findChat(ID_t chatId) {
-    std::string chatTypeStr;
+std::optional<Chat> DB::findChat(ID_t chatID) {
+    std::string chatType;
     std::optional<std::string> chatName;
     std::vector<ID_t> userIDs;
 
-    executeWithCallback([&] (sqlite3_stmt* stmt) {
-        
-        const unsigned char* typeText = sqlite3_column_text(stmt, 0);
-        if (typeText) {
-            chatTypeStr = reinterpret_cast<const char*>(typeText);
-                  
-            const unsigned char* nameText = sqlite3_column_text(stmt, 1);
-            if (nameText) {
-                chatName = std::string(reinterpret_cast<const char*>(nameText));
-            } 
-            else { 
-                chatName = std::nullopt;
-            }
-        }
-        else {
-            std::cerr << "Empty pointer to char" << std::endl;
+    bool exec_res = executeWithCallback([&] (sqlite3_stmt* stmt) {
+        const unsigned char* type = sqlite3_column_text(stmt, 0);
+        if (!type) return true;
+
+        chatType = reinterpret_cast<const char*>(type);
+                
+        const unsigned char* nameText = sqlite3_column_text(stmt, 1);
+        if (nameText) {
+            chatName = std::string(reinterpret_cast<const char*>(nameText));
+        } 
+        else { 
+            chatName = std::nullopt;
         }
 
         userIDs.emplace_back(sqlite3_column_int64(stmt, 2));
@@ -302,15 +337,41 @@ std::optional<Chat> DB::findChat(ID_t chatId) {
         JOIN ChatMembers cm ON cm.chat_id = c.id
         JOIN User u ON u.id = cm.user_id
         WHERE c.id = ?
-        ORDER BY u.id;)", chatId
+        ORDER BY u.id;)", chatID
     );
 
-    if (chatTypeStr.empty()) {
-        std::cerr << "Empty chat type" << std::endl;
-    }
-    else if (chatTypeStr == "personal" && userIDs.size() != 2) {
-        throw std::invalid_argument("Invalid member count for personal chat");
-    }
+    if (!exec_res) return std::nullopt;
+
+    return makePulledChat(userIDs, chatType, chatName, chatID);
+}
+
+std::optional<Chat> DB::findChat(const std::string& chatName) {
+    std::string chatType;
+    ID_t chatID;
+    std::vector<ID_t> userIDs;
+
+    bool exec_res = executeWithCallback([&] (sqlite3_stmt* stmt) {
+        const unsigned char* type = sqlite3_column_text(stmt, 0);
+        if (!type) return true;
+
+        chatType = reinterpret_cast<const char*>(type);
+        chatID = sqlite3_column_int64(stmt, 1);
+            
+        userIDs.emplace_back(sqlite3_column_int64(stmt, 2));
+        return true;
+    }, 
+        R"(SELECT 
+            c.type AS c_type,
+            c.id AS c_id,
+            u.id AS u_id
+        FROM Chat c
+        JOIN ChatMembers cm ON cm.chat_id = c.id
+        JOIN User u ON u.id = cm.user_id
+        WHERE c.name = ?
+        ORDER BY u.id;)", chatName
+    );
+
+    if (!exec_res || chatType.empty()) return std::nullopt;
 
     if (userIDs.empty()) {  
         throw std::invalid_argument("Can not find chat members - usersIDs is empty");
@@ -319,22 +380,16 @@ std::optional<Chat> DB::findChat(ID_t chatId) {
     auto pulled_chat = std::make_optional<Chat>(
         shared_from_this(),
         userIDs,
-        ChatType::fromString(chatTypeStr),
+        ChatType::fromString(chatType),
         chatName
     );
-    pulled_chat->setID(chatId);
+    pulled_chat->setID(chatID);
     
     return pulled_chat;
 }
 
-void DB::deleteChat(ID_t chatID) {
-    execute("DELETE FROM Chat WHERE id = ?", chatID);
-}
-
-void DB::dropAllTables(const std::string& file_with_drop_query) {
-    std::vector<std::string> drop_sql = readSqlQuery(file_with_drop_query);
-    for (const auto& query : drop_sql)
-        execute(query);
+bool DB::deleteChat(ID_t chatID) {
+    return execute("DELETE FROM Chat WHERE id = ?", chatID);
 }
 
 bool DB::prepareExecution(const std::string& query, sqlite3_stmt** stmt) {

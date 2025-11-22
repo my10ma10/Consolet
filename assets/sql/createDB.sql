@@ -8,8 +8,13 @@ CREATE TABLE IF NOT EXISTS Chat (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT,
     type TEXT NOT NULL CHECK(type IN ('personal', 'group')),
-    CHECK((type = 'personal' AND name IS NULL) OR (type = 'group' AND name IS NOT NULL))
+    CHECK(
+        (type = 'personal' AND name IS NULL) OR 
+        (type = 'group' AND name IS NOT NULL))
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_chat_group_name_unique
+    ON Chat(name) WHERE type = 'group';
 
 CREATE TABLE IF NOT EXISTS MessagesHistory (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

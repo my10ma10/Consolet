@@ -23,4 +23,6 @@ public:
     ID_t getChatID() const { return chatID_; }
     std::string getText() const { return text_; }
 
+    bool operator==(const Message& other) const = default;
+
 };
