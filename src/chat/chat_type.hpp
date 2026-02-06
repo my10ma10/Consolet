@@ -5,7 +5,7 @@
 class ChatType {
 public:
     enum class Type {
-        PERSONAL,
+        PERSONAL = 1,
         GROUP,
         UNKNOWN
     };

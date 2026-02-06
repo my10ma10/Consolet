@@ -1,17 +1,32 @@
+#pragma once
 #include <iostream>
+#include <memory>
 
-class UI {
-public:
-    virtual ~UI() = default;
-    virtual void display() const = 0;
-};
+#include <ncurses.h>
+#include <termios.h>
 
-class NumberedUI : public UI {
-public:
-    void display() const override;
-};
+#include "db.hpp"
+#include "command_interface.hpp"
+#include "command_factory.hpp"
 
-class CommandUI : public UI {
-public:
-    void display() const override;
-};
+// class UI final {
+//     std::unique_ptr<CommandInterface> ci_;
+
+//     std::shared_ptr<DB> db_;
+    
+
+// public:
+//     UI(std::unique_ptr<CommandInterface>&& ci = nullptr);
+
+//     ~UI();
+
+//     void display() const;
+
+//     void setDB(std::shared_ptr<DB> db) {db_ = db; }
+
+
+// private:
+// };
+
+void disableEcho();
+void enableEcho();

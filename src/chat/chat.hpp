@@ -30,7 +30,7 @@ public:
     
     Chat(
         std::shared_ptr<DB> db,
-        std::vector<ID_t>& userIDs,
+        const std::vector<ID_t>& userIDs,
         ChatType::Type type,
         const std::optional<std::string>& name = std::nullopt
     );

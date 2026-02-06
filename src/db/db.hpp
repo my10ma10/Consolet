@@ -70,13 +70,16 @@ public:
     std::optional<Chat> findChat(ID_t id);
     std::optional<Chat> findChat(const std::string& name);
 
+    // std::optional<Chat> findPersonalChat(ID_t clientID, ID_t otherID);
+    // std::optional<Chat> findPersonalChat(ID_t clientID, const std::string otherName);
+
     bool deleteChat(ID_t chatID);
     
 private:
     void addMemberToChat(ID_t userID, ID_t chatId);
 
     std::optional<Chat> makePulledChat(
-        std::vector<ID_t>& userIDs, const std::string& chatType, 
+        const std::vector<ID_t>& userIDs, const std::string& chatType, 
         const std::optional<std::string>& chatName, ID_t chatID
     );
     
@@ -208,7 +211,7 @@ void DB::bind(sqlite3_stmt* stmt, unsigned int index, T&& arg) {
         }
     }
     else if constexpr (
-                std::is_same_v<DecayedT, nullptr_t> ||
+                std::is_same_v<DecayedT, std::nullptr_t> ||
                 std::is_same_v<DecayedT, std::nullopt_t>
         ) {
         r = sqlite3_bind_null(stmt, index);

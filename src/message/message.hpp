@@ -3,13 +3,19 @@
 
 #include "db/db.hpp"
 
+class Serializer;
+
 class Message {
+    friend class Serializer;
+
     std::optional<ID_t> msgID_;
     ID_t chatID_;
     ID_t senderID_;
     std::string text_;
 
 public:
+    Message() = default;
+    
     Message(ID_t chatID, ID_t senderID, const std::string& text) 
         : chatID_(chatID), senderID_(senderID), text_(text)
     {}

@@ -1,12 +1,73 @@
 #include "command.hpp"
 
-CommandParser::CommandParser(std::unique_ptr<ICommand> cmd)
-    : command(std::move(cmd))
-    {}
+#include "client_session/client_session.hpp"
+
+#include <format>
+
+// std::vector<ICommand> InfoCommand::makeCommands() const {
+//     std::vector<ICommand> res;
+//     res.reserve(NUMBER_OF_COMMANDS);
+
+//     res.emplace_back(InfoCommand{});
+//     res.emplace_back(SendMsgCommand{});
+//     res.emplace_back(PrintChatsListCommand{});
+//     res.emplace_back(OpenChatCommand{});
+//     res.emplace_back(ExitAccountCommand{});
+//     res.emplace_back(QuitAppCommand{});
+
+//     return res;
+// }
+
+// void InfoCommand::execute() {
+//     std::vector<ICommand> commands = makeCommands();
+
+//     std::cout << "List of commands:\n";
+//     for (int i = 0; i < commands.size(); ++i) {
+//         std::format("\t{}. {}\n", i, commands[i].getName());
+//     }
+// }
+
+bool SendMsgCommand::sendMessage(const std::string& receiverName, const std::string& text) {
+    printw("\nTrying to write msg to the db\n");
+
+    Message message(
+        session_.getLocalDB()->findChat(receiverName)->getID().value_or(0), 
+        session_.getClientID().value_or(0), 
+        text
+    );
 
 
-MsgCommand::MsgCommand(const std::string& name, const std::string& text)
-    : _msg(name, text)
-    {}
+    if (message.getText().empty()) {
+        return false;
+    }
 
+    session_.sendToServer(std::move(message));
 
+    session_.getLocalDB()->save(message);
+    
+    return true;
+}
+
+// void SendMsgCommand::sendToPersonalChat(
+//     std::shared_ptr<DB> db, 
+//     const std::string& receiverName, 
+//     const std::string& text
+// ) 
+// {
+
+//     Message message(
+//         session_.getLocalDB()->findChat(receiverName)->getID().value_or(0), 
+//         session_.getClientID().value_or(0), 
+//         text
+//     );
+
+// }
+
+// void SendMsgCommand::sendToGroupChat(
+//     std::shared_ptr<DB> db, 
+//     const std::string& receiverName, 
+//     const std::string& text
+// ) 
+// {
+//     // sendMessage(Message{ , caller_id, });
+// }

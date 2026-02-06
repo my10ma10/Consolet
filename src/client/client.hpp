@@ -1,54 +1,21 @@
 #pragma once
-#include <iostream>
-#include <vector>
-#include <memory>
-#include <thread>
-#include <mutex>
-#include <atomic>
 
-#include <string.h>
-#include <unistd.h>
+#include "client_connection/client_connection.hpp"
+#include "command.hpp"
+#include "db.hpp"
 
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <termios.h>
+class Client {    
+    std::unique_ptr<ClientConnection> connection_;
+    std::shared_ptr<DB> localDB_;
 
-#include "user.hpp"
-
-#define SIZE 4096
-
-
-class Connection {
-    struct addrinfo* client_info;
-    int socket_fd;
-    std::string ip_address;
-    std::string port;
-
-    std::vector<char> recv_buf = std::vector<char>(SIZE);
-    int recv_len;
-    
-    std::string message;
-    std::atomic<bool> is_active{true};
+    // std::unique_ptr<UI> ui_;
 
 public:
-    Connection(
-        const std::string& server_ip_address, 
-        const std::string& server_port
-    );
-    ~Connection();
+    Client();
 
-    void init();
-    void connect();
-    void start();
-    void stop();
+    void sendToServer(Message&& message) const;
 
-    void recieve();
-    void send();
+    void run();
 
-    void printMsg();
+    std::shared_ptr<DB> getLocalDB() const { return localDB_; }
 };
-
-
-

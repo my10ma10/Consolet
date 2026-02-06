@@ -90,7 +90,7 @@ std::vector<std::string> DB::readSqlQuery(const std::string& filename) {
 ssize_t DB::getTableSize(const std::string& tableName) {
     std::optional<ssize_t> res;
     executeWithCallback(
-        [this, &res] (sqlite3_stmt* stmt) {
+        [&res] (sqlite3_stmt* stmt) {
             res = sqlite3_column_int64(stmt, 0);
             return false; // exit from execute immidiately
         },
@@ -141,7 +141,7 @@ void DB::addMemberToChat(ID_t userID, ID_t chatID) {
 }
 
 std::optional<Chat> DB::makePulledChat(
-    std::vector<ID_t>& userIDs, const std::string& chatType, 
+    const std::vector<ID_t>& userIDs, const std::string& chatType, 
     const std::optional<std::string>& chatName, ID_t chatID
 ) {
     if (chatType.empty()) return std::nullopt;
@@ -387,7 +387,43 @@ std::optional<Chat> DB::findChat(const std::string& chatName) {
     
     return pulled_chat;
 }
+/*
+std::optional<Chat> DB::findPersonalChat(ID_t clientID, ID_t otherID) {
+    std::string chatType;
+    ID_t chatID;
 
+    bool exec_res = executeWithCallback([&] (sqlite3_stmt* stmt) {
+        const unsigned char* type = sqlite3_column_text(stmt, 0);
+        if (!type) return true;
+
+        chatType = reinterpret_cast<const char*>(type);
+
+        chatID = sqlite3_column_int64(stmt, 1);
+        return true;
+    }, 
+        R"(SELECT 
+            c.type AS c_type,
+            c.id AS chat_id,
+            u.id AS user_id
+        FROM Chat c
+        JOIN ChatMembers cm ON cm.chat_id = c.id
+        JOIN User u ON u.id = cm.user_id
+        WHERE c.type = 'personal'
+        AND c.id IN (
+                SELECT chat_id
+                FROM ChatMembers
+                WHERE user_id IN (?, ?)
+                GROUP BY chat_id
+                HAVING COUNT(DISTINCT user_id) = 2
+        )
+        ORDER BY u.id;)", clientID, otherID
+    );
+
+    if (!exec_res) return std::nullopt;
+
+    return makePulledChat({clientID, otherID}, chatType, std::nullopt, chatID);
+}
+*/
 bool DB::deleteChat(ID_t chatID) {
     return execute("DELETE FROM Chat WHERE id = ?", chatID);
 }

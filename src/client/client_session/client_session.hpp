@@ -5,10 +5,17 @@
 #include "user.hpp"
 #include "client.hpp"
 
+#include "ui/ui.hpp"
+
 class ClientSession {
-    std::unique_ptr<User> user;
-    std::unique_ptr<Connection> client;
-    
+    std::optional<ID_t> clientID_ = std::nullopt;
+
+    std::unique_ptr<User> user_;
+    std::unique_ptr<ClientConnection> connection_;
+
+    std::shared_ptr<DB> localDB_;
+
+    std::unique_ptr<CommandInterface> ci_;
 public:
     ClientSession(
         const std::string& ip_address, 
@@ -18,10 +25,16 @@ public:
     void auth();
     void start();
 
+    
+    void sendToServer(Message&& message) const;
+
+    std::string getHelpMsg() const;
+    std::shared_ptr<DB> getLocalDB() const { return localDB_; }
+    std::optional<ID_t> getClientID() const { return clientID_; };
 
     void setUser(std::unique_ptr<User> u);
-    void setConnection(std::unique_ptr<Connection> c);
-};
+    void setConnection(std::unique_ptr<ClientConnection> c);
 
-void disableEcho();
-void enableEcho();
+private:
+    std::vector<std::unique_ptr<ICommand>> selectUI();
+};

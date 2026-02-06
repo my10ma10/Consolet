@@ -45,7 +45,7 @@ Chat::Chat(
 
 Chat::Chat(
     std::shared_ptr<DB> db, 
-    std::vector<ID_t>& userIDs, 
+    const std::vector<ID_t>& userIDs, 
     ChatType::Type type,
     const std::optional<std::string>& name)
     : db_(db), userIDs_(userIDs), name_(name), type_(type)
@@ -56,7 +56,7 @@ Chat::Chat(
     if (type == ChatType::Type::PERSONAL && userIDs.size() != 2) 
         throw std::invalid_argument(std::string("Personal chat has no ") + std::to_string(userIDs.size()) + " != 2 users");
 
-    std::for_each(userIDs.begin(), userIDs.end(), [this] (ID_t& userID)
+    std::for_each(userIDs.begin(), userIDs.end(), [this] (ID_t userID)
     {
         auto user = db_->findUser(userID);
         if (!user) {
