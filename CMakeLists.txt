@@ -9,8 +9,13 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0 -Wall -Wextra -Wpedan
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g -O0 -Wall -Wextra -Wpedantic")
 set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} --coverage")
 
+add_subdirectory(external/spdlog)
 
 find_package(SQLite3 REQUIRED)
+
+if (NOT TARGET spdlog) 
+    find_package(spdlog REQUIRED)
+endif()
 
 option(ENABLE_TESTS "Enable tests" ON)
 option(ENABLE_CLANG_TIDY "Enable clang-tidy analysis" OFF)

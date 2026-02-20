@@ -8,16 +8,18 @@ class Serializer;
 class Message {
     friend class Serializer;
 
-    std::optional<ID_t> msgID_;
     ID_t chatID_;
     ID_t senderID_;
     std::string text_;
+    std::optional<ID_t> msgID_;
 
 public:
     Message() = default;
     
-    Message(ID_t chatID, ID_t senderID, const std::string& text) 
-        : chatID_(chatID), senderID_(senderID), text_(text)
+    Message(ID_t chatID, ID_t senderID, const std::string& text, 
+        const std::optional<ID_t>& msgID = std::nullopt
+    ) 
+        : chatID_(chatID), senderID_(senderID), text_(text), msgID_(msgID)
     {}
 
     void setID(ID_t id) { msgID_ = id; } 

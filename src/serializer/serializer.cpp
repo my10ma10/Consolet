@@ -15,7 +15,7 @@ std::vector<uint8_t> Serializer::serialize(const Message& msg) {
 
     push_T(msg.chatID_);
     push_T(msg.senderID_);
-    push_T(msg.text_);
+    push_T(msg.text_.data());
 
     return data;
 }
@@ -31,7 +31,9 @@ Message Serializer::deserialize(const std::vector<uint8_t>& data) {
     read_v(msg.msgID_);
     read_v(msg.chatID_);
     read_v(msg.senderID_);
-    read_v(msg.text_);
+    read_v(msg.text_.data());
+
+    return msg;
 }
 
 template <>

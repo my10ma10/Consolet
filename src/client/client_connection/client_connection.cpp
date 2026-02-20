@@ -75,7 +75,7 @@ void ClientConnection::connect() {
         std::exit(2);
     }
 
-    char server_ip[SIZE];
+    char server_ip[BUF_SIZE];
     inet_ntop(
         p->ai_family, 
         &(((struct sockaddr_in *)p->ai_addr)->sin_addr), 
@@ -92,7 +92,7 @@ void ClientConnection::stop() {
 void ClientConnection::recieveMessage() {
     std::fill(recv_buf.begin(), recv_buf.end(), 0);
     
-    if ((recv_len = ::recv(socket_fd, recv_buf.data(), SIZE, 0)) == -1) {
+    if ((recv_len = ::recv(socket_fd, recv_buf.data(), BUF_SIZE, 0)) == -1) {
         std::cerr << "client recieve error\n";
         stop();
     }

@@ -50,6 +50,7 @@ target_include_directories(ui_lib PUBLIC
 )
 
 target_link_libraries(client PRIVATE
+    spdlog::spdlog
     client_session_lib
     client_connection_lib
     ui_lib

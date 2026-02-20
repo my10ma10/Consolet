@@ -3,7 +3,8 @@
 #include <vector>
 
 #include "user.hpp"
-#include "client.hpp"
+#include "client/client_connection/client_connection.hpp"
+#include "db/client_cache_db.hpp"
 
 #include "ui/ui.hpp"
 

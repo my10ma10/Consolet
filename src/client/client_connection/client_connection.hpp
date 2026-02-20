@@ -21,7 +21,7 @@
 #include "chat.hpp"
 #include "serializer/serializer.hpp"
 
-#define SIZE 4096
+#define BUF_SIZE 4096
 
 class ClientConnection {
     struct addrinfo* client_info;
@@ -29,7 +29,7 @@ class ClientConnection {
     std::string ip_address;
     std::string port;
 
-    std::vector<char> recv_buf = std::vector<char>(SIZE);
+    std::vector<char> recv_buf = std::vector<char>(BUF_SIZE);
     int recv_len;
 
     std::atomic<bool> is_active{true};

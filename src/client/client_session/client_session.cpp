@@ -2,12 +2,12 @@
 
 ClientSession::ClientSession(const std::string& ip_address, const std::string& port) 
 {
-    localDB_ = std::make_shared<DB>();
+    localDB_ = std::make_shared<ClientCacheDB>();
 
-    // add - create if not exists
-    localDB_->init("local.db", std::string(PROJECT_SOURCE_DIR) + "/assets/sql/create_server_DB.sql");
-    connection_ = std::make_unique<ClientConnection>(ip_address, port);
-    
+    if (localDB_) {
+        localDB_->init("local.db", std::string(PROJECT_SOURCE_DIR) + "/assets/sql/create_client_cache_DB.sql");
+        connection_ = std::make_unique<ClientConnection>(ip_address, port);
+    }
 }
 
 void ClientSession::auth() {
@@ -39,10 +39,10 @@ void ClientSession::start() {
     ci_->display(commands);
     
     
-    if (auto* tmp = dynamic_cast<NumberedCI*>(ci_.get())) {
+    if ([[maybe_unused]] auto* tmp = dynamic_cast<NumberedCI*>(ci_.get())) {
         ci_->processChoice(commands, static_cast<std::size_t>(getch() - '0'));
-    }
-    else if (auto* tmp = dynamic_cast<SlashedCI*>(ci_.get())) {
+    } 
+    else if ([[maybe_unused]] auto* tmp = dynamic_cast<SlashedCI*>(ci_.get())) {
         std::string command_str(1024, 0);
         getstr(command_str.data());
         

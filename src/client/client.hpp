@@ -1,21 +1,21 @@
 #pragma once
 
-#include "client_connection/client_connection.hpp"
-#include "command.hpp"
-#include "db.hpp"
+// #include "client_connection/client_connection.hpp"
+// #include "command.hpp"
+// #include "db/client_cache_db.hpp"
 
-class Client {    
-    std::unique_ptr<ClientConnection> connection_;
-    std::shared_ptr<DB> localDB_;
+// class Client {    
+//     std::unique_ptr<ClientConnection> connection_;
+//     std::shared_ptr<DB> localDB_;
 
-    // std::unique_ptr<UI> ui_;
+//     // std::unique_ptr<UI> ui_;
 
-public:
-    Client();
+// public:
+//     Client();
 
-    void sendToServer(Message&& message) const;
+//     void sendToServer(Message&& message) const;
 
-    void run();
+//     void run();
 
-    std::shared_ptr<DB> getLocalDB() const { return localDB_; }
-};
+//     std::shared_ptr<DB> getLocalDB() const { return localDB_; }
+// };

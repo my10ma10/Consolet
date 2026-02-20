@@ -30,6 +30,10 @@ target_link_options(chat_lib PRIVATE --coverage)
 add_library(db_lib STATIC
     db/db.cpp
     db/db.hpp
+    db/client_cache_db.hpp
+    db/client_cache_db.cpp
+    db/server_db.hpp
+    db/server_db.cpp
 )
 
 target_compile_options(db_lib PRIVATE --coverage -O0 -g)

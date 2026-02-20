@@ -5,7 +5,6 @@
 
 class Serializer {
 public:
-
     static std::vector<uint8_t> serialize(const Message& msg);
 
     static Message deserialize(const std::vector<uint8_t>& data);

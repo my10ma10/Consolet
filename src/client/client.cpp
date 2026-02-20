@@ -1,16 +1,16 @@
-#include "client.hpp"
+// #include "client.hpp"
 
-Client::Client() {
-    localDB_ = std::make_shared<DB>();
+// Client::Client() {
+//     localDB_ = std::make_shared<ClientCacheDB>();
 
-    localDB_->init("local.db", std::string(PROJECT_SOURCE_DIR) + "/assets/sql/createDB.sql");
-    // ui_ = std::make_unique<UI>(localDB_);
-}
+//     localDB_->init("local.db", std::string(PROJECT_SOURCE_DIR) + "/assets/sql/createDB.sql");
+//     // ui_ = std::make_unique<UI>(localDB_);
+// }
 
-void Client::sendToServer(Message&& message) const {
-    connection_->sendToServer(message);
-}
+// void Client::sendToServer(Message&& message) const {
+//     connection_->sendToServer(message);
+// }
 
-void Client::run() {
-    connection_->start();
-}
+// void Client::run() {
+//     connection_->start();
+// }
