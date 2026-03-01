@@ -105,6 +105,6 @@ CMakeUserPresets.json
 ### Project ###
 external/
 coverage/
-.db
+*.db
 .info
 .fake
