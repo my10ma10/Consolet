@@ -21,7 +21,7 @@
 #include "chat.hpp"
 #include "serializer/serializer.hpp"
 
-#define BUF_SIZE 4096
+#include "defines.hpp"
 
 class ClientConnection {
     struct addrinfo* client_info;

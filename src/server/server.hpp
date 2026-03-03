@@ -12,7 +12,7 @@ class Server {
     std::mutex sessions_mtx;
     std::vector<std::unique_ptr<ServerSession> > sessions;
     
-    struct addrinfo * server_info; // содержит sockaddr
+    struct addrinfo * server_info; // includes sockaddr
     struct sockaddr_storage calling_info;
 
     std::string ip_address;

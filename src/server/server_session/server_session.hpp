@@ -15,13 +15,12 @@
 #include <poll.h>
 #include <fcntl.h>
 
-#include "user.hpp"
+#include "usr/user.hpp"
 
 
 #define BACKLOG 10
 #define SIZE 4096
 
-/// @brief The connection of the client in the server
 class ServerSession {
     std::unique_ptr<User> user;
     std::atomic<bool> is_active{true};
@@ -30,7 +29,7 @@ class ServerSession {
 
     std::string message;
     
-    size_t recv_len;
+    ssize_t recv_len;
     std::vector<char> recv_buf = std::vector<char>(SIZE);
     
 public:

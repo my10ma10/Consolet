@@ -1,13 +1,13 @@
 #include "server.hpp"
 
 Server::Server(const std::string& ip_addr, const std::string& port) 
-    : 
-        server_info{nullptr},
-        ip_address(ip_addr), 
-        port(port) 
-    {
-        init();
-    }
+: 
+    server_info{nullptr},
+    ip_address(ip_addr), 
+    port(port) 
+{
+    init();
+}
 
 Server::~Server() {
     freeaddrinfo(server_info);
@@ -24,13 +24,12 @@ void Server::init() {
     hints.ai_flags = AI_PASSIVE;
 
     int status;
-    /// заполняем server_info на основе hints
+    
     if ((status = getaddrinfo(NULL, port.c_str(), &hints, &server_info)) != 0) {
         std::cerr << "getaddrinfo error: " << gai_strerror(status) << std::endl;
         std::exit(1);
     }
     
-    /// дескриптор сокета
     struct addrinfo * p;
     for (p = server_info; p != NULL; p = p->ai_next) {
         if ((socket_fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
@@ -44,7 +43,6 @@ void Server::init() {
             exit(1);
         }
 
-        /// связываем с портом, полученным из getaddrinfo() (bind - для сервера)
         if (bind(socket_fd, p->ai_addr, p->ai_addrlen) == -1) {
             close(socket_fd);
             std::perror("bind error");
@@ -95,7 +93,7 @@ void Server::addSession() {
     std::scoped_lock lock(sessions_mtx);
     sessions.emplace_back(std::move(session));
 
-    if (session_thread.joinable()) session_thread.join();
+    session_thread.detach();
 }
 
 std::string Server::getIPaddr() const {

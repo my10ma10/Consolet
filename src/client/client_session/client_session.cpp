@@ -5,7 +5,7 @@ ClientSession::ClientSession(const std::string& ip_address, const std::string& p
     localDB_ = std::make_shared<ClientCacheDB>();
 
     if (localDB_) {
-        localDB_->init("local.db", std::string(PROJECT_SOURCE_DIR) + "/assets/sql/create_client_cache_DB.sql");
+        localDB_->init("local.db", std::string(PROJECT_SOURCE_DIR) + std::string(Defines::CLIENT_CACHE_DB_PATH));
         connection_ = std::make_unique<ClientConnection>(ip_address, port);
     }
 }
@@ -74,10 +74,6 @@ std::string ClientSession::getHelpMsg() const
             "   /list - print the list of the active chats\n"
             "   /msg receiver message - send message to receiver (chat name or user name)\n"
         );
-}
-
-void ClientSession::setUser(std::unique_ptr<User> u) {
-    user_ = std::move(u);
 }
 
 void ClientSession::setConnection(std::unique_ptr<ClientConnection> c) {

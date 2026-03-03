@@ -3,7 +3,7 @@
 // Client::Client() {
 //     localDB_ = std::make_shared<ClientCacheDB>();
 
-//     localDB_->init("local.db", std::string(PROJECT_SOURCE_DIR) + "/assets/sql/createDB.sql");
+//     localDB_->init("local.db", std::string(PROJECT_SOURCE_DIR) + );
 //     // ui_ = std::make_unique<UI>(localDB_);
 // }
 

@@ -86,7 +86,7 @@ void ServerSession::send() {
 
 void ServerSession::printMsg() {
     std::cout << "server recieved message: ";
-    for (size_t i = 0; i < recv_len; ++i) {
+    for (ssize_t i = 0; i < recv_len; ++i) {
         printf("%c", recv_buf[i]);
     }
     printf("\n");

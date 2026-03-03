@@ -2,6 +2,8 @@
 #include <memory>
 #include <vector>
 
+#include "defines.hpp"
+
 #include "user.hpp"
 #include "client/client_connection/client_connection.hpp"
 #include "db/client_cache_db.hpp"
@@ -11,7 +13,7 @@
 class ClientSession {
     std::optional<ID_t> clientID_ = std::nullopt;
 
-    std::unique_ptr<User> user_;
+    // std::unique_ptr<User> user_;
     std::unique_ptr<ClientConnection> connection_;
 
     std::shared_ptr<DB> localDB_;
@@ -33,7 +35,6 @@ public:
     std::shared_ptr<DB> getLocalDB() const { return localDB_; }
     std::optional<ID_t> getClientID() const { return clientID_; };
 
-    void setUser(std::unique_ptr<User> u);
     void setConnection(std::unique_ptr<ClientConnection> c);
 
 private:

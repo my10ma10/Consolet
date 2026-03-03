@@ -1,6 +1,5 @@
 #include "client_connection.hpp"
 #include "client.hpp"
-#include "command_interface.hpp"
 
 ClientConnection::ClientConnection(const std::string& server_ip_address, const std::string& server_port) 
     : ip_address(server_ip_address), port(server_port)
