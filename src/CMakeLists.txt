@@ -54,6 +54,8 @@ add_library(command_lib STATIC
     command/command.hpp
 )
 
+target_link_libraries(command_lib PUBLIC spdlog::spdlog)
+
 target_compile_options(command_lib PRIVATE --coverage -O0 -g)
 target_link_options(command_lib PRIVATE --coverage)
 
@@ -64,6 +66,17 @@ add_library(user_lib STATIC
 
 target_compile_options(user_lib PRIVATE --coverage -O0 -g)
 target_link_options(user_lib PRIVATE --coverage)
+
+add_library(tcp_socket_lib STATIC
+    tcp_socket/tcp_socket.cpp
+    tcp_socket/tcp_socket.hpp
+)
+
+target_link_libraries(tcp_socket_lib PUBLIC spdlog::spdlog)
+
+target_compile_options(tcp_socket_lib PRIVATE --coverage -O0 -g)
+target_link_options(tcp_socket_lib PRIVATE --coverage)
+
 
 add_subdirectory(server)
 add_subdirectory(client)

@@ -33,6 +33,10 @@ add_library(client_connection_lib STATIC
     client_connection/client_connection.hpp
 )
 
+target_link_libraries(client_connection_lib PUBLIC spdlog::spdlog)
+target_link_libraries(ui_lib PUBLIC tcp_socket_lib)
+
+
 find_package(Curses REQUIRED)
 
 if (ENABLE_CLANG_TIDY)

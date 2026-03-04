@@ -33,4 +33,8 @@ public:
 
     bool operator==(const Message& other) const = default;
 
+    operator std::string() const;
+
+    friend std::ostream& operator<<(std::ostream& stream, const Message& msg);
+
 };

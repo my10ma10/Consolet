@@ -29,7 +29,7 @@ void ClientSession::auth() {
 
 
 void ClientSession::start() {
-    //! have to get client ID from server
+    // TODO: have to get client ID from server
 
     std::cout << getHelpMsg() << std::endl;
 
@@ -87,6 +87,7 @@ std::vector<std::unique_ptr<ICommand>> ClientSession::selectUI() {
     std::cin >> ui_choice;
     std::cin.ignore();
 
+    // TODO: перейти к принципу открытости-закрытости
     if (ui_choice == 1) {
         ci_ = std::make_unique<NumberedCI>();
 
@@ -102,6 +103,9 @@ std::vector<std::unique_ptr<ICommand>> ClientSession::selectUI() {
             *this, 
             dynamic_cast<SlashedCI&>(*ci_)
         );
+    }
+    else if (ui_choice == 3) {
+        connection_->start();
     }
     else {
         throw std::invalid_argument("Unexpected CI choice");

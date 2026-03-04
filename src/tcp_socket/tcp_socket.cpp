@@ -3,15 +3,55 @@
 #include <vector>
 #include "spdlog/spdlog.h"
 
+Socket::Socket(int fd) : socket_fd_(fd)
+{
+    std::memset(&addrinfo_, 0, sizeof(addrinfo_));
+}
+
 Socket::~Socket()
 {
     Socket::close();
 }
 
-bool Socket::connect(const std::string& port, const std::string& host) {
-    if (!getAddrInfo(port, host)) return false;
+Socket::Socket(Socket&& other) {
+    if (!other.isActive()) return;
+    
+    if (this != &other) {
+        socket_fd_ = other.socket_fd_;
+        addrinfo_ = other.addrinfo_;
 
-    struct tcp::addrinfo * p;
+        other.socket_fd_ = -1;
+        other.addrinfo_ = nullptr;
+    }
+}
+
+Socket& Socket::operator=(Socket&& other) {
+    if (this != &other) {
+        this->close();
+
+        socket_fd_ = other.socket_fd_;
+        addrinfo_ = other.addrinfo_;
+        
+        other.socket_fd_ = -1;
+        other.addrinfo_ = nullptr;
+    }
+    return *this;
+}
+
+bool Socket::connect(const std::string& port, const std::string& host) {
+    struct addrinfo hints;
+    std::memset(&hints, 0, sizeof(hints));
+
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+
+    int status = getaddrinfo(host.c_str(), port.c_str(), &hints, &addrinfo_);
+    if (status != 0) {
+        std::cerr << "getaddrinfo error: " << tcp::gai_strerror(status) << std::endl;
+        return false;
+    }
+
+    struct addrinfo * p;
     for (p = addrinfo_; p != NULL; p = p->ai_next) {
         if (!createSocket(p)) return false;
 
@@ -20,19 +60,29 @@ bool Socket::connect(const std::string& port, const std::string& host) {
             return false;
         }
     }
-
-    Socket::close();
+    spdlog::info("Connected");
     return true;
 }
 
 bool Socket::bind(const std::string& port) {
-    if (!getAddrInfo(port)) return false;
+    struct addrinfo hints;
+    std::memset(&hints, 0, sizeof(hints));
 
-    struct tcp::addrinfo * p;
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE;
+
+    int status = tcp::getaddrinfo(NULL, port.c_str(), &hints, &addrinfo_);
+    if (status != 0) {
+        std::cerr << "getaddrinfo error: " << tcp::gai_strerror(status) << std::endl;
+        return false;
+    }
+
+    struct addrinfo * p;
     for (p = addrinfo_; p != NULL; p = p->ai_next) {
-        if (!createSocket(p)) return false;
+        if (!createSocket(p)) continue;
 
-        int opt = 1;
+        int opt = 1; 
         if (tcp::setsockopt(socket_fd_, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(int)) == -1) {
             std::perror("setsockopt error");
             return false;
@@ -42,9 +92,10 @@ bool Socket::bind(const std::string& port) {
             std::perror("connecting error");
             return false;
         }
+        break;
     }
+    spdlog::info("Binded");
 
-    Socket::close();
     return true;
 }
 
@@ -53,78 +104,84 @@ bool Socket::listen(int backlog) {
         std::perror("listen error");
         return false;
     }
+    spdlog::info("Listened");
     return true;
 }
 
-bool Socket::accept() {
-    struct tcp::sockaddr_storage client_info;
+std::optional<Socket> Socket::accept() {
+    struct sockaddr_storage client_info;
     socklen_t info_size = sizeof(client_info);    
-    int client_fd = tcp::accept(socket_fd_, (struct tcp::sockaddr *)&client_info, &info_size);
+    int client_fd = tcp::accept(socket_fd_, (struct sockaddr *)&client_info, &info_size);
 
     if (client_fd == -1) {
         std::perror("accept error");
-        return false;
+        return std::nullopt;
     }
-    return true;
+    spdlog::info("Accepted");
+    return Socket(client_fd);
 }
 
 std::optional<int> Socket::send(const std::string& msg) {
-    if (socket_fd_ < 0) return std::nullopt;
+    return Socket::send(msg.c_str(), msg.size());
+}
 
-    auto sent = tcp::send(client_fd_, msg.c_str(), msg.size(), 0);
+std::optional<int> Socket::send(const void* data, const std::size_t size) {
+    if (!isActive()) return std::nullopt;
+
+    auto sent = tcp::send(socket_fd_, data, size, 0);
     if (sent == -1) {
-        std::perror("send error");
+        std::perror("socket send error");
         return std::nullopt;
     }
+    spdlog::info("Sent");
     return sent;
 }
 
-std::optional<int> Socket::recv() {
-    if (socket_fd_ < 0) return std::nullopt;
+std::optional<std::string> Socket::recv() {
+    if (!isActive()) return std::nullopt;
 
-    std::vector<char> recv_buf;
-    std::fill(recv_buf.begin(), recv_buf.end(), 0);
+    std::vector<char> recv_buf(BUF_SIZE, 0);
+    // std::fill(recv_buf.begin(), recv_buf.end(), 0);
 
 
-    auto received = tcp::recv(client_fd_, recv_buf.data(), BUF_SIZE, 0);
+    auto received = tcp::recv(socket_fd_, recv_buf.data(), BUF_SIZE, 0);
     if (received == -1) {
         std::perror("recv error");
         return std::nullopt;
     }
     else if (received == 0) { 
-        spdlog::critical("The connection was closed by client {}", client_fd_);
+        spdlog::warn("The connection was closed by client {}", socket_fd_);
+        Socket::shutdown();
     }
-    return received;
+    auto recv_str = std::string(recv_buf.begin(), recv_buf.end());
+
+    spdlog::info("Recieved: {}", recv_str);
+    return recv_str;
 }
 
 void Socket::close() {
-    if (socket_fd_ >= 0) {
+    if (addrinfo_) {
+        freeaddrinfo(addrinfo_);
+        addrinfo_ = nullptr;
+    }
+    if (isActive()) {
         ::close(socket_fd_);
         socket_fd_ = -1;
     }
 }
 
-bool Socket::getAddrInfo(const std::string& port, const std::string& host) {
-    struct tcp::addrinfo hints;
+void Socket::shutdown() {
+    tcp::shutdown(socket_fd_, SHUT_RDWR);
+}
 
-    std::memset(&hints, 0, sizeof(hints));
+bool Socket::isActive() const {
+    return socket_fd_ >= 0;
+}
 
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = tcp::SOCK_STREAM;
-    hints.ai_flags = AI_PASSIVE;
-
-    int status;    
-    if ((status = getaddrinfo(host.c_str(), port.c_str(), &hints, &addrinfo_)) != 0) {
-        std::cerr << "getaddrinfo error: " << tcp::gai_strerror(status) << std::endl;
+bool Socket::createSocket(struct addrinfo *p) {
+    if ((socket_fd_ = tcp::socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+        std::perror("server socket error");
         return false;
     }
     return true;
-}
-
-bool Socket::createSocket(struct tcp::addrinfo *p) {
-    if ((socket_fd_ = tcp::socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-        std::perror("server socket error");
-        return true;
-    }
-    return false;
 }

@@ -26,4 +26,5 @@ target_link_libraries(server PRIVATE
     message_lib
     chat_lib
     db_lib
+    tcp_socket_lib
 )

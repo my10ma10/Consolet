@@ -6,44 +6,27 @@
 #include <mutex>
 
 #include <unistd.h>
-#include <netdb.h>
-#include <string.h>
-
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <arpa/inet.h>
 #include <poll.h>
 #include <fcntl.h>
 
 #include "usr/user.hpp"
-
-
-#define BACKLOG 10
-#define SIZE 4096
+#include "tcp_socket/tcp_socket.hpp"
 
 class ServerSession {
     std::unique_ptr<User> user;
     std::atomic<bool> is_active{true};
 
-    int listen_fd;
+    Socket listen_socket_;
 
-    std::string message;
-    
-    ssize_t recv_len;
-    std::vector<char> recv_buf = std::vector<char>(SIZE);
+    std::string message_;
     
 public:
     ServerSession(int client_fd);
+    ServerSession(Socket&& socket);
     ~ServerSession();
-
     
     void start();
     void stop();
-
-    void recieve();
-    void send();
-
-    void printMsg();
 
     void setUser(std::unique_ptr<User> u);
 };

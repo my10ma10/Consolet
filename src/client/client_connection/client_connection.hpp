@@ -9,30 +9,28 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <termios.h>
-
 #include "user.hpp"
 #include "db.hpp"
 #include "message.hpp"
 #include "chat.hpp"
 #include "serializer/serializer.hpp"
 
+#include "spdlog/spdlog.h"
+
 #include "defines.hpp"
+#include "tcp_socket/tcp_socket.hpp"
+
 
 class ClientConnection {
-    struct addrinfo* client_info;
-    int socket_fd;
-    std::string ip_address;
-    std::string port;
+    std::string ip_address_;
+    std::string port_;
 
-    std::vector<char> recv_buf = std::vector<char>(BUF_SIZE);
-    int recv_len;
+    Socket socket_;
 
-    std::atomic<bool> is_active{true};
+    // std::vector<char> recv_buf = std::vector<char>(BUF_SIZE);
+    // int recv_len;
+
+    std::atomic<bool> is_active_{true};
 public:
     ClientConnection() = default;    
 
@@ -42,19 +40,17 @@ public:
     );
     ~ClientConnection();
 
-    void init();
     void start();
     
     void sendToServer(const Message& message);
     void sendToServer(Message&& message);
 
-private:
-    void connect();
     void stop();
 
-    void recieveMessage();
+private:
+    std::string recv();
 
-    void printMsg();
+    void printMsg(const std::string& msg);
 };
 
 

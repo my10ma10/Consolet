@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include <poll.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -12,22 +11,43 @@
 
 #include "defines.hpp"
 
-namespace tcp {
+
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+
+namespace tcp {
+    using ::getaddrinfo;
+    using ::freeaddrinfo;
+    using ::socket;
+    using ::bind;
+    using ::listen;
+    using ::accept;
+    using ::send;
+    using ::recv;
+    using ::setsockopt;
+    using ::gai_strerror;
+    using ::connect;
+    using ::shutdown;
 }
 
 
 class Socket {
     int socket_fd_ = -1; 
-    int client_fd_ = -1;
 
-    struct tcp::addrinfo* addrinfo_ = nullptr;
+    struct addrinfo* addrinfo_ = nullptr;
 
 public: 
+    Socket() = default;
+    Socket(int fd);
     ~Socket();
+
+    Socket(const Socket& other) = delete;
+    Socket& operator=(const Socket& other) = delete;
+    
+    Socket(Socket&& other);
+    Socket& operator=(Socket&& other);
 
     bool connect(const std::string& port, const std::string& host);
 
@@ -35,16 +55,18 @@ public:
 
     bool listen(int backlog);
 
-    bool accept();
+    std::optional<Socket> accept();
 
     std::optional<int> send(const std::string& msg);
-    std::optional<int> recv();
+    std::optional<int> send(const void* data, const std::size_t size);
+    std::optional<std::string> recv();
 
     void close();
+    void shutdown();
+
+    bool isActive() const;
 
 private:
-    bool getAddrInfo(const std::string& port, const std::string& host = std::string{});
-
-    bool createSocket(struct tcp::addrinfo* p);
+    bool createSocket(struct addrinfo* p);
 };
 
