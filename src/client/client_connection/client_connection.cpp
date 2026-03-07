@@ -20,16 +20,46 @@ void ClientConnection::start() {
         while (is_active_) {
             std::string str;
 
-            std::cout << "Send msg: ";
-            std::cin >> str;
+            if (!std::getline(std::cin, str)) {
+                spdlog::debug("getline error");
+            }
+            
+            
+            if (str.empty()) {
+                spdlog::debug("Entered message is empty: break");
+                break;
+            }
+
             socket_.send(str);
+            
+            if (!is_active_) {
+                break;
+            }
+
+            
+            std::cout.flush();
+
+            if (std::cin.fail() && !std::cin.eof()) {
+                std::cin.clear();
+            }
         }
     });
 
     std::thread recv_thread([&] () {
         while (is_active_) {
-            auto msg = recv();
-            printMsg(msg);
+
+            auto msg = socket_.recv();
+            if (!msg) {
+                spdlog::debug("Received nullopt");
+            }
+            if (msg->empty()) {
+                spdlog::debug("Received empty string");
+            }
+            printMsg(*msg);
+            
+            if (!is_active_) {
+                break;
+            }
         }
     });
         
@@ -59,6 +89,6 @@ void ClientConnection::sendToServer(Message&& message) {
 }
 
 void ClientConnection::printMsg(const std::string& msg) {
-    std::cout << "Client recieved message: " << msg;
+    std::cout << "Client recieved message: '" << msg << "'\n";
     
 }

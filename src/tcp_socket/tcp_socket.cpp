@@ -60,7 +60,7 @@ bool Socket::connect(const std::string& port, const std::string& host) {
             return false;
         }
     }
-    spdlog::info("Connected");
+    spdlog::debug("Connected");
     return true;
 }
 
@@ -94,7 +94,7 @@ bool Socket::bind(const std::string& port) {
         }
         break;
     }
-    spdlog::info("Binded");
+    spdlog::debug("Binded");
 
     return true;
 }
@@ -104,7 +104,7 @@ bool Socket::listen(int backlog) {
         std::perror("listen error");
         return false;
     }
-    spdlog::info("Listened");
+    spdlog::debug("Listened");
     return true;
 }
 
@@ -117,7 +117,7 @@ std::optional<Socket> Socket::accept() {
         std::perror("accept error");
         return std::nullopt;
     }
-    spdlog::info("Accepted");
+    spdlog::debug("Accepted");
     return Socket(client_fd);
 }
 
@@ -133,7 +133,6 @@ std::optional<int> Socket::send(const void* data, const std::size_t size) {
         std::perror("socket send error");
         return std::nullopt;
     }
-    spdlog::info("Sent");
     return sent;
 }
 
@@ -155,7 +154,7 @@ std::optional<std::string> Socket::recv() {
     }
     auto recv_str = std::string(recv_buf.begin(), recv_buf.end());
 
-    spdlog::info("Recieved: {}", recv_str);
+    spdlog::debug("Recieved: {}", recv_str);
     return recv_str;
 }
 
@@ -165,13 +164,23 @@ void Socket::close() {
         addrinfo_ = nullptr;
     }
     if (isActive()) {
+        Socket::shutdown();
         ::close(socket_fd_);
         socket_fd_ = -1;
     }
 }
 
 void Socket::shutdown() {
-    tcp::shutdown(socket_fd_, SHUT_RDWR);
+    if (!isActive()) {
+        std::perror("Trying to shutdown empry fd");
+        return;
+    }
+    if (tcp::shutdown(socket_fd_, SHUT_RDWR) == -1) {
+        std::perror("Socket shutdown error");
+        return;
+    }
+
+    socket_fd_ = -1;
 }
 
 bool Socket::isActive() const {

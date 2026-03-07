@@ -26,7 +26,6 @@ void Server::start() {
 
 void Server::stop() {
     is_active_ = false;
-    listen_socket_.close();
 }
 
 void Server::addSession() {

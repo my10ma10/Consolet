@@ -2,6 +2,10 @@ add_library(server_session_lib STATIC
     server_session/server_session.cpp 
     server_session/server_session.hpp
 )
+
+target_link_libraries(server_session_lib PUBLIC
+    spdlog::spdlog
+)
     
 add_executable(server 
     main.cpp 

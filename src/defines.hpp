@@ -5,6 +5,7 @@
 using ID_t = int64_t;
 inline constexpr std::size_t BUF_SIZE = 4096;
 inline constexpr std::size_t BACKLOG = 10;
+inline constexpr const char* PORT = "3490";
 
 namespace Defines {
 inline constexpr std::string_view CLIENT_CACHE_DB_PATH = \

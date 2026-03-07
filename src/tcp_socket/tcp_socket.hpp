@@ -62,11 +62,11 @@ public:
     std::optional<std::string> recv();
 
     void close();
-    void shutdown();
 
     bool isActive() const;
 
 private:
+    void shutdown();
     bool createSocket(struct addrinfo* p);
 };
 
