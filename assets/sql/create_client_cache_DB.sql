@@ -9,10 +9,10 @@ CREATE TABLE IF NOT EXISTS Chat (
     id INTEGER PRIMARY KEY,
     name TEXT,
     type TEXT NOT NULL CHECK(type IN ('personal', 'group')),
+    cache_time INTEGER DEFAULT (strftime('%s', 'now')),
     CHECK(
         (type = 'personal' AND name IS NULL) OR 
-        (type = 'group' AND name IS NOT NULL)),
-    cache_time INTEGER DEFAULT (strftime('%s', 'now'))
+        (type = 'group' AND name IS NOT NULL))
 );
 
 CREATE TABLE IF NOT EXISTS MessagesHistory (
