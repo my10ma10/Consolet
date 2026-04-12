@@ -5,7 +5,6 @@ include_directories(
 
 add_library(json_lib STATIC 
     json/json.cpp
-    json/json.hpp
 )  
 target_link_libraries(json_lib PUBLIC 
     nlohmann_json
@@ -41,6 +40,7 @@ add_library(db_lib STATIC
 )
 target_link_libraries(db_lib PUBLIC 
     SQLite::SQLite3 
+    spdlog::spdlog
     chat_lib
     message_lib
 )
