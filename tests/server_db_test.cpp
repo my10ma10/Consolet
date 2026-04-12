@@ -1,25 +1,31 @@
 #include <gtest/gtest.h>
 
-#include "db/db.hpp"
+#include "db/server_db.hpp"
 #include "chat/chat.hpp"
 #include "usr/user.hpp"
 #include "message/message.hpp"
+#include "clock.cpp"
 
 #include <string>
 #include <memory>
 #include <thread>
 #include <atomic>
 
-class DBTest : public ::testing::Test {
+#include "spdlog/spdlog.h"
+
+
+
+class ServerDBTest : public ::testing::Test {
 protected:
-    std::shared_ptr<DB> db;
+    std::shared_ptr<ServerDB> db;
 
 public:
     void SetUp() override {
-        db = std::make_shared<DB>();
+        // spdlog::set_level(spdlog::level::debug);
+        db = std::make_shared<ServerDB>();
         db->init(
             ":memory:", 
-            std::string(PROJECT_SOURCE_DIR) + "/assets/sql/createDB.sql"
+            std::string(PROJECT_SOURCE_DIR) + "/assets/sql/create_server_DB.sql"
         );
     }
     
@@ -32,22 +38,22 @@ protected:
         return db->getTableSize(tableName);
     }
     
-    ssize_t getTableSize(const std::string& tableName, DB& source_db) {
+    ssize_t getTableSize(const std::string& tableName, ServerDB& source_db) {
         return source_db.getTableSize(tableName);
     }
 
-    sqlite3* getRawDB(const DB& source_db) const {
+    sqlite3* getRawDB(const ServerDB& source_db) const {
         return source_db.db_;
     }
 };
 
-TEST_F(DBTest, init_test) {
+TEST_F(ServerDBTest, init_test) {
     TearDown();
     SetUp();
     EXPECT_NE(db, nullptr);
 }
 
-TEST_F(DBTest, not_empty_raw_sqlite3_field) {
+TEST_F(ServerDBTest, not_empty_raw_sqlite3_field) {
     User user("Alice", "password1");
     db->save(user);
     
@@ -56,7 +62,7 @@ TEST_F(DBTest, not_empty_raw_sqlite3_field) {
     ASSERT_NE(raw_source_db, nullptr);
 }
 
-TEST_F(DBTest, db_move_constructor_test) {
+TEST_F(ServerDBTest, db_move_constructor_test) {
     // arrange
     User user("Alice", "password1");
     db->save(user);
@@ -65,7 +71,7 @@ TEST_F(DBTest, db_move_constructor_test) {
     ssize_t source_db_users_count = getTableSize("User");
 
     // act
-    DB moved_db(std::move(*db));
+    ServerDB moved_db(std::move(*db));
 
     // assert
     ASSERT_EQ(raw_source_db, getRawDB(moved_db));
@@ -75,7 +81,7 @@ TEST_F(DBTest, db_move_constructor_test) {
     EXPECT_EQ(source_db_users_count, 1);
 }
 
-TEST_F(DBTest, db_move_assignment_test) {
+TEST_F(ServerDBTest, db_move_assignment_test) {
     // arrange
     User user("Alice", "password1");
     db->save(user);
@@ -83,8 +89,8 @@ TEST_F(DBTest, db_move_assignment_test) {
     auto raw_source_db = getRawDB(*db);
     ssize_t source_db_users_count = getTableSize("User");
     
-    DB moved_db;
-    moved_db.init(":memory:", std::string(PROJECT_SOURCE_DIR) + "/assets/sql/createDB.sql");
+    ServerDB moved_db;
+    moved_db.init(":memory:", std::string(PROJECT_SOURCE_DIR) + "/assets/sql/create_server_DB.sql");
 
     auto moved_db_old_users_count = getTableSize("User", moved_db);
 
@@ -102,7 +108,7 @@ TEST_F(DBTest, db_move_assignment_test) {
     EXPECT_EQ(source_db_users_count, 1);
 }
 
-TEST_F(DBTest, right_user_count_after_db_move) {
+TEST_F(ServerDBTest, right_user_count_after_db_move) {
     // arrange
     User user1("Alice", "password1");
     User user2("Bob", "password2");
@@ -110,7 +116,7 @@ TEST_F(DBTest, right_user_count_after_db_move) {
     
     auto raw_source_db = getRawDB(*db);
 
-    DB moved_db(std::move(*db));    
+    ServerDB moved_db(std::move(*db));    
 
     // act
     bool save_res = moved_db.save(user2);
@@ -122,14 +128,14 @@ TEST_F(DBTest, right_user_count_after_db_move) {
     EXPECT_TRUE(save_res);
 }
 
-TEST_F(DBTest, check_empty_table_sizes) {
+TEST_F(ServerDBTest, check_empty_table_sizes) {
     EXPECT_EQ(getTableSize("User"), 0);
     EXPECT_EQ(getTableSize("Chat"), 0);
     EXPECT_EQ(getTableSize("MessagesHistory"), 0);
     EXPECT_EQ(getTableSize("ChatMembers"), 0);
 }
 
-TEST_F(DBTest, check_not_empty_table_sizes) {
+TEST_F(ServerDBTest, check_not_empty_table_sizes) {
     User user("Alice", "password");
 
     bool res1 = db->save(user);
@@ -138,21 +144,21 @@ TEST_F(DBTest, check_not_empty_table_sizes) {
     EXPECT_EQ(getTableSize("User"), 1);
 }
 
-TEST_F(DBTest, sqlite_open__error_processing_test) {
+TEST_F(ServerDBTest, sqlite_open__error_processing_test) {
     db.reset();
-    db = std::make_shared<DB>();
+    db = std::make_shared<ServerDB>();
 
     EXPECT_THROW(db->init(
         "/invalid/path/to/mydb.db", 
-        std::string(PROJECT_SOURCE_DIR) + "/assets/sql/createDB.sql"
+        std::string(PROJECT_SOURCE_DIR) + "/assets/sql/create_server_DB.sql"
     ), std::logic_error);
 
     EXPECT_EQ(getRawDB(*db), nullptr);
 }
 
-TEST_F(DBTest, can_not_open_query_file_test) {
+TEST_F(ServerDBTest, can_not_open_query_file_test) {
     db.reset();
-    db = std::make_shared<DB>();
+    db = std::make_shared<ServerDB>();
     
     EXPECT_THROW(db->init(":memory:", "/invalid/path/to/query.sql"), std::logic_error);
     
@@ -161,7 +167,7 @@ TEST_F(DBTest, can_not_open_query_file_test) {
 
 // -- User --
 
-TEST_F(DBTest, save_user_to_db) {
+TEST_F(ServerDBTest, save_user_to_db) {
     User user("Alice", "password");
 
     bool save_res = db->save(user);
@@ -172,7 +178,7 @@ TEST_F(DBTest, save_user_to_db) {
     EXPECT_EQ(getTableSize("User"), 1);
 }
 
-TEST_F(DBTest, save_rvalue_user) {
+TEST_F(ServerDBTest, save_rvalue_user) {
 
     bool save_res = db->save(User{"Alice", "password"});
     
@@ -180,7 +186,7 @@ TEST_F(DBTest, save_rvalue_user) {
     EXPECT_EQ(getTableSize("User"), 1);
 }
 
-TEST_F(DBTest, save_user_with_the_same_name) {
+TEST_F(ServerDBTest, save_user_with_the_same_name) {
     User user("Alice", "password1");
     
     bool res1 = db->save(user);
@@ -192,7 +198,7 @@ TEST_F(DBTest, save_user_with_the_same_name) {
 }
 
 
-TEST_F(DBTest, parallel_users_saving) {
+TEST_F(ServerDBTest, parallel_users_saving) {
     // arrange
     constexpr int Threads_Count = 2;
     constexpr int Users_Count = 3;
@@ -222,7 +228,7 @@ TEST_F(DBTest, parallel_users_saving) {
     EXPECT_EQ(getTableSize("User"), Threads_Count * Users_Count);
 }
 
-TEST_F(DBTest, find_saved_user_by_id) {
+TEST_F(ServerDBTest, find_saved_user_by_id) {
     User user("Alice", "password1");
     db->save(user);
 
@@ -232,7 +238,7 @@ TEST_F(DBTest, find_saved_user_by_id) {
     EXPECT_EQ(user, *pulled_user);
 }
 
-TEST_F(DBTest, find_saved_user_by_name) {
+TEST_F(ServerDBTest, find_saved_user_by_name) {
     User user("Alice", "password1");
     db->save(user);
 
@@ -244,7 +250,7 @@ TEST_F(DBTest, find_saved_user_by_name) {
 
 // -- Message --
 
-TEST_F(DBTest, save_message_to_db) {
+TEST_F(ServerDBTest, save_message_to_db) {
     // arrange
     std::vector<User> users;
     users.emplace_back("Alice", "password1");
@@ -257,7 +263,10 @@ TEST_F(DBTest, save_message_to_db) {
     Chat chat(db, users, ChatType::Type::PERSONAL);
     bool save_chat_res = db->save(chat);
 
-    Message msg(*chat.getID(), *users[0].getID(), "Hello from Alice!");
+    Message msg(
+        *chat.getID(), *users[0].getID(), 
+        "Hello from Alice!", cl::time_since_epoch()
+    );
 
     // act
     bool save_res = db->save(msg);
@@ -270,7 +279,7 @@ TEST_F(DBTest, save_message_to_db) {
     EXPECT_EQ(getTableSize("MessagesHistory"), 1);
 }
 
-TEST_F(DBTest, save_rvalue_message) {
+TEST_F(ServerDBTest, save_rvalue_message) {
     // arrange
     std::vector<User> users;
     users.emplace_back("Alice", "password1");
@@ -284,7 +293,10 @@ TEST_F(DBTest, save_rvalue_message) {
     bool save_chat_res = db->save(chat);
 
     // act
-    bool save_res = db->save(Message{*chat.getID(), *users[0].getID(), "Hello from Alice!"});
+    bool save_res = db->save(
+        Message{*chat.getID(), *users[0].getID(), 
+        "Hello from Alice!", cl::time_since_epoch()}
+    );
 
     // assert
     ASSERT_TRUE(save_chat_res);
@@ -293,7 +305,7 @@ TEST_F(DBTest, save_rvalue_message) {
     EXPECT_EQ(getTableSize("MessagesHistory"), 1);
 }
 
-TEST_F(DBTest, find_message_by_id) {
+TEST_F(ServerDBTest, find_message_by_id) {
     // arrange
     std::vector<User> users;
     users.emplace_back("Alice", "password1");
@@ -306,7 +318,10 @@ TEST_F(DBTest, find_message_by_id) {
     Chat chat(db, users, ChatType::Type::PERSONAL);
     db->save(chat);
 
-    Message msg(*chat.getID(), *users[0].getID(), "Hello from Alice!");
+    Message msg(
+        *chat.getID(), *users[0].getID(), 
+        "Hello from Alice!", cl::time_since_epoch()
+    );
     db->save(msg);
 
     // act
@@ -317,7 +332,7 @@ TEST_F(DBTest, find_message_by_id) {
     EXPECT_EQ(msg, *pulled_msg);
 }
 
-TEST_F(DBTest, find_message_by_text) {
+TEST_F(ServerDBTest, find_message_by_text) {
     // arrange
     std::vector<User> users;
     users.emplace_back("Alice", "password1");
@@ -330,7 +345,10 @@ TEST_F(DBTest, find_message_by_text) {
     Chat chat(db, users, ChatType::Type::PERSONAL);
     db->save(chat);
 
-    Message msg(*chat.getID(), *users[0].getID(), "Hello from Alice!");
+    Message msg(
+        *chat.getID(), *users[0].getID(), 
+        "Hello from Alice!", cl::time_since_epoch()
+    );
     db->save(msg);
 
     // act
@@ -341,7 +359,7 @@ TEST_F(DBTest, find_message_by_text) {
     EXPECT_EQ(msg, *pulled_msg);
 }
 
-TEST_F(DBTest, delete_existing_message) {
+TEST_F(ServerDBTest, delete_existing_message) {
     // arrange
     std::vector<User> users;
     users.emplace_back("Alice", "password1");
@@ -353,7 +371,10 @@ TEST_F(DBTest, delete_existing_message) {
     Chat chat(db, users, ChatType::Type::PERSONAL);
     db->save(chat);
 
-    Message msg(*chat.getID(), *users[0].getID(), "Hello from Alice!");
+    Message msg(
+        *chat.getID(), *users[0].getID(), 
+        "Hello from Alice!", cl::time_since_epoch()
+    );
     db->save(msg);
 
     // act 
@@ -364,7 +385,7 @@ TEST_F(DBTest, delete_existing_message) {
     EXPECT_EQ(getTableSize("MessagesHistory"), 0);
 }
 
-TEST_F(DBTest, not_delete_not_existing_message) {
+TEST_F(ServerDBTest, not_delete_not_existing_message) {
     // arrange
     std::vector<User> users;
     users.emplace_back("Alice", "password1");
@@ -376,7 +397,10 @@ TEST_F(DBTest, not_delete_not_existing_message) {
     Chat chat(db, users, ChatType::Type::PERSONAL);
     db->save(chat);
 
-    Message msg(*chat.getID(), *users[0].getID(), "Hello from Alice!");
+    Message msg(
+        *chat.getID(), *users[0].getID(), 
+        "Hello from Alice!", cl::time_since_epoch()
+    );
     db->save(msg);
 
     // act 
@@ -389,7 +413,7 @@ TEST_F(DBTest, not_delete_not_existing_message) {
 
 // -- Chat --
 
-TEST_F(DBTest, save_personal_chat_to_db) {
+TEST_F(ServerDBTest, save_personal_chat_to_db) {
     // arrange
     std::vector<User> users;
     users.emplace_back("Alice", "password1");
@@ -413,7 +437,7 @@ TEST_F(DBTest, save_personal_chat_to_db) {
     EXPECT_EQ(getTableSize("Chat"), 1);
 }
 
-TEST_F(DBTest, save_group_chat_to_db) {
+TEST_F(ServerDBTest, save_group_chat_to_db) {
     // arrange
     std::vector<User> users;
     users.emplace_back("Alice", "password1");
@@ -437,7 +461,7 @@ TEST_F(DBTest, save_group_chat_to_db) {
     EXPECT_EQ(getTableSize("Chat"), 1);
 }
 
-TEST_F(DBTest, save_group_chat_with_one_user) {
+TEST_F(ServerDBTest, save_group_chat_with_one_user) {
     // arrange
     std::vector<User> users;
     users.emplace_back("Alice", "password1");
@@ -457,7 +481,7 @@ TEST_F(DBTest, save_group_chat_with_one_user) {
     EXPECT_EQ(getTableSize("Chat"), 1);
 }
 
-TEST_F(DBTest, save_rvalue_chat) {    
+TEST_F(ServerDBTest, save_rvalue_chat) {    
     // arrange
     std::vector<User> users;
     users.emplace_back("Alice", "password1");
@@ -479,14 +503,14 @@ TEST_F(DBTest, save_rvalue_chat) {
     EXPECT_EQ(getTableSize("Chat"), 1);
 }
 
-TEST_F(DBTest, not_saving_chat_without_users) {
+TEST_F(ServerDBTest, not_saving_chat_without_users) {
     std::vector<User> empty_users;
     
     EXPECT_THROW(Chat(db, empty_users, ChatType::Type::PERSONAL), std::invalid_argument);
     EXPECT_THROW(Chat(db, empty_users, ChatType::Type::GROUP), std::invalid_argument);
 }
 
-TEST_F(DBTest, not_creating_not_two_users_in_personal_chat) {
+TEST_F(ServerDBTest, not_creating_not_two_users_in_personal_chat) {
     // arrange
     std::vector<User> threeUsers;
     threeUsers.emplace_back("Alice", "password1");
@@ -508,7 +532,7 @@ TEST_F(DBTest, not_creating_not_two_users_in_personal_chat) {
     EXPECT_EQ(getTableSize("Chat"), 0);
 }
 
-TEST_F(DBTest, not_creating_personal_chat_with_name) {
+TEST_F(ServerDBTest, not_creating_personal_chat_with_name) {
     // arrange
     std::vector<User> users;
     users.emplace_back("Alice", "password1");
@@ -529,7 +553,7 @@ TEST_F(DBTest, not_creating_personal_chat_with_name) {
     EXPECT_EQ(getTableSize("Chat"), 0);
 }
 
-TEST_F(DBTest, not_saving_group_chat_without_name) {
+TEST_F(ServerDBTest, not_saving_group_chat_without_name) {
     // arrange
     std::vector<User> users;
     users.emplace_back("Alice", "password1");
@@ -552,7 +576,7 @@ TEST_F(DBTest, not_saving_group_chat_without_name) {
 }
 
 
-TEST_F(DBTest, find_saved_personal_chat_in_db) {
+TEST_F(ServerDBTest, find_saved_personal_chat_in_db) {
     // arrange
     std::vector<User> users;
     users.emplace_back("Alice", "password1");
@@ -573,7 +597,7 @@ TEST_F(DBTest, find_saved_personal_chat_in_db) {
     EXPECT_EQ(chat, *pulled_chat);
 }
 
-TEST_F(DBTest, find_saved_group_chat_in_db) {
+TEST_F(ServerDBTest, find_saved_group_chat_in_db) {
     // arrange
     std::vector<User> users;
     users.emplace_back("Alice", "password1");
@@ -594,7 +618,7 @@ TEST_F(DBTest, find_saved_group_chat_in_db) {
     EXPECT_EQ(chat, *pulled_chat);
 }
 
-TEST_F(DBTest, delete_chat_from_db) {
+TEST_F(ServerDBTest, delete_chat_from_db) {
     // arrange
     std::vector<User> users;
     users.emplace_back("Alice", "password1");

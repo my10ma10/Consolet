@@ -1,7 +1,8 @@
 add_executable(tests 
     main_test.cpp
-    db_test.cpp
+    server_db_test.cpp
     chat_test.cpp
+    message_test.cpp
 )
 
 target_include_directories(tests PUBLIC
@@ -22,6 +23,7 @@ target_link_libraries(tests
     chat_lib
     gtest_main
     gmock_main
+    spdlog::spdlog
 )
 target_link_options(tests PRIVATE --coverage)
 

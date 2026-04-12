@@ -2,15 +2,13 @@
 #include <sqlite3.h>
 
 #include <iostream>
-#include <type_traits>
 #include <optional>
 #include <memory>
 #include <mutex>
 #include <vector>
 
 #include "chat/chat_type.hpp"
-
-using ID_t = int64_t;
+#include "defines.hpp"
 
 class User;
 class Chat;
@@ -83,6 +81,8 @@ private:
 
     bool prepareExecution(const std::string& query, sqlite3_stmt** stmt);
 };
+
+class ServerDB;
 
 
 template <typename... Args>

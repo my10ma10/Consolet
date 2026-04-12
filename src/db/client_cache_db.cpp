@@ -1,13 +1,16 @@
 #include "client_cache_db.hpp"
 
-#include "chat.hpp"
-#include "user.hpp"
-#include "message.hpp"
+#include "chat/chat.hpp"
+#include "usr/user.hpp"
+#include "message/message.hpp"
 
-void ClientCacheDB::syncChat(ID_t chatID) {
-    auto pulled_chat = findChat(chatID);
+void ClientCacheDB::syncChat(ID_t chatID, std::shared_ptr<ServerDB> server_db) {
+    // auto pulled_chat = findChat(chatID);
     
-    auto messages = getMessagesSince(*pulled_chat->getID(), CachedMsgsNumber);
+    // auto messages = getMessagesSince(*pulled_chat->getID(), CachedMsgsNumber);
+
+    auto messages = getMessagesSince(chatID, CachedMsgsNumber);
+
 }
 
 void ClientCacheDB::clearCachedMessages(time_t days) {

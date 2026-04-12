@@ -6,6 +6,8 @@
 
 #include <optional>
 
+#include "spdlog/spdlog.h"
+
 bool ServerDB::save(User &user)
 {
     bool res = execute(
@@ -31,7 +33,7 @@ bool ServerDB::save(User&& user) {
 void ServerDB::addMemberToChat(ID_t userID, ID_t chatID) {
     auto user = findUser(userID);
     if (!user.has_value()) {
-        std::cerr << "Error: user not found" << std::endl;
+        spdlog::error("Error: user not found");
         execute(
             "INSERT INTO User (name, password) VALUES(?, ?)", 
             user->getName(), user->getPassword()
@@ -89,13 +91,13 @@ bool ServerDB::deleteUser(ID_t userID) {
 
 bool ServerDB::save(Message& message) {
     if (!chatExistsInDB(message.getChatID())) {
-        std::cerr << "Save message error: chat does not exists\n";
+        spdlog::error("Save message error: chat does not exists");
         return false;
     }
 
     bool res = execute(
-        "INSERT INTO MessagesHistory (sender_id, chat_id, text) VALUES (?, ?, ?)",
-        message.getSenderID(), message.getChatID(), message.getText() 
+        "INSERT INTO MessagesHistory (sender_id, chat_id, text, date_time) VALUES (?, ?, ?, ?)",
+        message.getSenderID(), message.getChatID(), message.getText(), message.getTimeSinceEpoch()
     );
 
     if (res)
@@ -111,22 +113,24 @@ bool ServerDB::save(Message&& message) {
 std::optional<Message> ServerDB::findMessage(ID_t chatID, ID_t msgID) {
     std::string text;
     ID_t senderID = 0;
+    int64_t timestamp = 0;
 
     bool exec_res = executeWithCallback([&] (sqlite3_stmt* stmt) -> bool {
         senderID = sqlite3_column_int64(stmt, 0);
         text = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+        timestamp = sqlite3_column_int64(stmt, 2);
         return true;
     }, 
-        "SELECT sender_id, text FROM MessagesHistory WHERE chat_id = ? AND id = ?",
+        "SELECT sender_id, text, date_time FROM MessagesHistory WHERE chat_id = ? AND id = ?",
         chatID, msgID
     );
 
-    if (!exec_res || !senderID || text.empty()) {
-        std::cerr << "Message not found\n";
+    if (!exec_res || !senderID || text.empty() || timestamp == 0) {
+        spdlog::critical("Message not found");
         return std::nullopt;
     }
 
-    Message msg(chatID, senderID, text);
+    Message msg(chatID, senderID, text, timestamp);
     msg.setID(msgID);
 
     return std::make_optional<Message>(std::move(msg));
@@ -135,22 +139,24 @@ std::optional<Message> ServerDB::findMessage(ID_t chatID, ID_t msgID) {
 std::optional<Message> ServerDB::findMessage(ID_t chatID, const std::string& text) {
     ID_t senderID = 0;
     ID_t msgID = 0;
+    int64_t timestamp = 0;
 
     bool exec_res = executeWithCallback([&] (sqlite3_stmt* stmt) -> bool {
         senderID = sqlite3_column_int64(stmt, 0);
         msgID = sqlite3_column_int64(stmt, 1);
+        timestamp = sqlite3_column_int64(stmt, 2);
         return true;
     },
-        "SELECT sender_id, id FROM MessagesHistory WHERE chat_id = ? AND text = ?", 
+        "SELECT sender_id, id, date_time FROM MessagesHistory WHERE chat_id = ? AND text = ?", 
         chatID, text
     );
 
-    if (!exec_res || !(senderID || msgID)) {
-        std::cerr << "Message not found\n";
+    if (!exec_res || !(senderID || msgID || timestamp == 0)) {
+        spdlog::critical("Message not found");
         return std::nullopt;
     }
 
-    Message msg(chatID, senderID, text);
+    Message msg(chatID, senderID, text, timestamp);
     msg.setID(msgID);
 
     return std::make_optional<Message>(msg);
@@ -170,7 +176,7 @@ bool ServerDB::deleteMessage(ID_t chatID, ID_t msgID) {
 
 bool ServerDB::save(Chat& chat) {
     if (chat.getID() && chatExistsInDB(*chat.getID())) {
-        std::cerr << "Chat exists in ServerDB - return without pulling\n";
+        spdlog::info("Chat exists in ServerDB - return without pulling");
         return true;
     }
     

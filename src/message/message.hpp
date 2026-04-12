@@ -1,26 +1,34 @@
 #pragma once
 #include <iostream>
 
+#include "json/json.hpp"
+
 #include "db/db.hpp"
+
+#include <chrono>
+
+namespace ch = std::chrono;
 
 class Serializer;
 
 class Message {
     friend class Serializer;
+    friend class nlohmann::adl_serializer<Message>;
 
     ID_t chatID_;
     ID_t senderID_;
     std::string text_;
+    int64_t timestamp_; // UTC milliseconds since Unix epoch
     std::optional<ID_t> msgID_;
 
 public:
     Message() = default;
     
     Message(ID_t chatID, ID_t senderID, const std::string& text, 
+        int64_t timestamp = ch::duration_cast<ch::milliseconds>(
+            ch::system_clock::now().time_since_epoch()).count(),
         const std::optional<ID_t>& msgID = std::nullopt
-    ) 
-        : chatID_(chatID), senderID_(senderID), text_(text), msgID_(msgID)
-    {}
+    );
 
     void setID(ID_t id) { msgID_ = id; } 
 
@@ -30,6 +38,7 @@ public:
     ID_t getSenderID() const { return senderID_; }
     ID_t getChatID() const { return chatID_; }
     std::string getText() const { return text_; }
+    int64_t getTimeSinceEpoch() const { return timestamp_; }
 
     bool operator==(const Message& other) const = default;
 

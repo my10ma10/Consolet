@@ -1,7 +1,7 @@
 #include "db.hpp"
-#include "user.hpp"
-#include "chat.hpp"
-#include "message.hpp"
+#include "usr/user.hpp"
+#include "chat/chat.hpp"
+#include "message/message.hpp"
 
 #include <array>
 #include <iterator>
@@ -9,10 +9,12 @@
 #include <fstream>
 #include <sstream>
 
+#include "spdlog/spdlog.h"
+
 DB::~DB() {
     int res = sqlite3_close(db_);
     if (res != SQLITE_OK) {
-        std::cerr << "SQLite3 close error" << std::endl;
+        spdlog::error("SQLite3 close error");
     }
     db_ = nullptr;
 }
@@ -26,7 +28,7 @@ DB& DB::operator=(DB&& other) noexcept {
         if (db_) {
             int res = sqlite3_close(db_);
             if (res != SQLITE_OK) {
-                std::cerr << "SQLite3 close error" << std::endl;
+                spdlog::error("SQLite3 close error");
             }
         }
         
@@ -44,7 +46,7 @@ void DB::init(const std::string& db_name, const std::string& sqlFile) {
 
 void DB::createDB(const std::string& db_name, const std::vector<std::string>& sql) {
     if (sqlite3_open(db_name.c_str(), &db_) != SQLITE_OK) {
-        std::cerr << "Error: cannot open db: " << sqlite3_errmsg(db_) << std::endl;
+        spdlog::error("Error: cannot open db: {}", sqlite3_errmsg(db_));
         sqlite3_close(db_);
         db_ = nullptr;
         throw std::logic_error("Failed to open database");
@@ -70,7 +72,7 @@ std::vector<std::string> DB::readSqlQuery(const std::string& filename) {
     std::ifstream file(filename);
 
     if (!file.is_open()) {
-        std::cerr << "Error: can not open query SQL file " << filename << std::endl;
+        spdlog::error("Error: can not open query SQL file {}", filename);
         return {};
     }
 
@@ -154,7 +156,7 @@ ID_t DB::getLastMsgID(ID_t chatID) {
 
 bool DB::prepareExecution(const std::string& query, sqlite3_stmt** stmt) {
     if (sqlite3_prepare_v2(db_, query.c_str(), -1, stmt, nullptr) != SQLITE_OK) {
-        std::cerr << "Preparing statement error: " << sqlite3_errmsg(db_) << std::endl;
+        spdlog::error("Preparing statement error: {}", sqlite3_errmsg(db_));
         return false;
     }
     return true;
@@ -166,6 +168,7 @@ std::vector<Message> DB::getMessagesSince(ID_t chatID, ID_t afterMessageID) {
     executeWithCallback([&](sqlite3_stmt* stmt) {
         ID_t chatID = sqlite3_column_int64(stmt, 2);
         ID_t senderID = sqlite3_column_int64(stmt, 1);
+        int64_t timestamp = sqlite3_column_int64(stmt, 3);
         auto rawText = sqlite3_column_text(stmt, 4);
 
         std::string text;
@@ -176,7 +179,7 @@ std::vector<Message> DB::getMessagesSince(ID_t chatID, ID_t afterMessageID) {
             throw std::logic_error("Empty message in ServerDB");
         }        
 
-        result.emplace_back(Message{chatID, senderID, text});
+        result.emplace_back(Message{chatID, senderID, text, timestamp});
         return true;
     },
     "SELECT * FROM MessagesHistory WHERE chat_id = ? AND id > ?",
