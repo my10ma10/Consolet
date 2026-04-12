@@ -14,6 +14,7 @@ before_script:
 build-job-debug: 
   stage: build
   script:
+    - git submodule status
     - sudo apt-get install cmake
     - cmake -S . -B ${BUILD_DEBUG_DIR} -DCMAKE_BUILD_TYPE=Debug 
     - cmake --build ${BUILD_DEBUG_DIR}
