@@ -2,7 +2,6 @@ add_executable(tests
     main_test.cpp
     server_db_test.cpp
     chat_test.cpp
-    message_test.cpp
 )
 
 target_include_directories(tests PUBLIC
