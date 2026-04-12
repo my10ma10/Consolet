@@ -15,7 +15,7 @@ before_script:
 build-job-debug: 
   stage: build
   script:
-    - apt-get install -y cmake libsqlite3-dev
+    - apt-get install -y cmake libsqlite3-dev libncurses-dev
     - cmake -S . -B ${BUILD_DEBUG_DIR} -DCMAKE_BUILD_TYPE=Debug 
     - cmake --build ${BUILD_DEBUG_DIR}
   tags: 
