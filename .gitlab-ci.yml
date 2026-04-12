@@ -12,7 +12,7 @@ before_script:
 
 build-job-debug: 
   stage: build
-  scripts:
+  script:
     - sudo apt-get install cmake
     - cmake -S . -B ${BUILD_DEBUG_DIR} -DCMAKE_BUILD_TYPE=Debug 
     - cmake --build ${BUILD_DEBUG_DIR}
@@ -21,7 +21,7 @@ build-job-debug:
 
 test-job:
   stage: test
-  scripts:
+  script:
     - ./build/tests/tests
   tags: 
     - ubuntu
@@ -34,7 +34,7 @@ test-job:
 
 coverage-job:
   stage: test
-  scripts:
+  script:
     - mkdir coverage/
     - lcov --capture --directory . --output-file coverage/coverage.info
     - lcov --remove coverage/coverage.info '*/external/*' '*/tests/*' -o coverage/coverage_filtered.info
