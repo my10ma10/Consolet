@@ -5,11 +5,14 @@ stages:
 
 variables:
   BUILD_DEBUG_DIR: build_debug
-  GIT_SUBMODULE_STRATEGY: recursive 
+  GIT_STRATEGY: clone
+  GIT_DEPTH: 0
+  GIT_SUBMODULE_STRATEGY: recursive
+  GIT_SUBMODULE_DEPTH: 0
 
-before_script:
-  - git submodule sync --recursive
-  - git submodule update --init --recursive
+# before_script:
+#   - git submodule sync --recursive
+#   - git submodule update --init --recursive
 
 build-job-debug: 
   stage: build
