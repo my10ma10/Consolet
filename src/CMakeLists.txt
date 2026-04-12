@@ -1,30 +1,34 @@
 include_directories(
     ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/src/chat
     ${CMAKE_SOURCE_DIR}/src/client
-    ${CMAKE_SOURCE_DIR}/src/command
-    ${CMAKE_SOURCE_DIR}/src/message
-    ${CMAKE_SOURCE_DIR}/src/server
-    ${CMAKE_SOURCE_DIR}/src/usr
-    ${CMAKE_SOURCE_DIR}/src/db
 )
+
+add_library(json_lib STATIC 
+    json/json.cpp
+    json/json.hpp
+)  
+target_link_libraries(json_lib PUBLIC 
+    nlohmann_json
+)
+
 
 add_library(message_lib STATIC 
     message/message.cpp    
     message/message.hpp  
 )
+target_link_libraries(message_lib PUBLIC 
+    json_lib
+)
 
-target_compile_options(message_lib PRIVATE --coverage -O0 -g)
-target_link_options(message_lib PRIVATE --coverage)
-
+add_library(user_lib STATIC
+    usr/user.cpp
+    usr/user.hpp
+)
 
 add_library(chat_lib STATIC 
     chat/chat.cpp
     chat/chat.hpp
 )
-
-target_compile_options(chat_lib PRIVATE --coverage -O0 -g)
-target_link_options(chat_lib PRIVATE --coverage)
 
 
 add_library(db_lib STATIC
@@ -35,12 +39,11 @@ add_library(db_lib STATIC
     db/server_db.hpp
     db/server_db.cpp
 )
-
-target_compile_options(db_lib PRIVATE --coverage -O0 -g)
-target_link_options(db_lib PRIVATE --coverage)
-target_link_libraries(db_lib PUBLIC SQLite::SQLite3)
-
-target_link_libraries(db_lib PUBLIC chat_lib)
+target_link_libraries(db_lib PUBLIC 
+    SQLite::SQLite3 
+    chat_lib
+    message_lib
+)
 
 
 add_library(command_lib STATIC
@@ -53,36 +56,30 @@ add_library(command_lib STATIC
     command/command.cpp
     command/command.hpp
 )
-
-target_link_libraries(command_lib PUBLIC spdlog::spdlog)
-
-target_compile_options(command_lib PRIVATE --coverage -O0 -g)
-target_link_options(command_lib PRIVATE --coverage)
-
-add_library(user_lib STATIC
-    usr/user.cpp
-    usr/user.hpp
+target_link_libraries(command_lib PUBLIC 
+    spdlog::spdlog
+    message_lib
 )
 
-target_compile_options(user_lib PRIVATE --coverage -O0 -g)
-target_link_options(user_lib PRIVATE --coverage)
+
 
 add_library(tcp_socket_lib STATIC
     tcp_socket/tcp_socket.cpp
     tcp_socket/tcp_socket.hpp
 )
-
-target_link_libraries(tcp_socket_lib PUBLIC spdlog::spdlog)
-
-target_compile_options(tcp_socket_lib PRIVATE --coverage -O0 -g)
-target_link_options(tcp_socket_lib PRIVATE --coverage)
-
-
-add_subdirectory(server)
-add_subdirectory(client)
+target_link_libraries(tcp_socket_lib PUBLIC 
+    spdlog::spdlog
+)
 
 
 add_library(serializer_lib STATIC
     serializer/serializer.cpp
     serializer/serializer.hpp
 )
+target_link_libraries(serializer_lib PUBLIC 
+    message_lib
+)
+
+
+add_subdirectory(server)
+add_subdirectory(client)
