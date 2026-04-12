@@ -15,16 +15,20 @@ before_script:
 build-job-debug: 
   stage: build
   script:
-    - echo "=== GCC versions ==="
-    - ls /usr/bin/gcc* 2>/dev/null || echo "No gcc found"
-    - g++ --version
-    - echo "=== CMake version ==="
-    - cmake --version
-    - echo "=== Test C++20 support ==="
-    - echo 'int main(){return 0;}' | g++ -x c++ -std=c++20 - -o /dev/null 2>&1 && echo "C++20 works" || echo "C++20 NOT supported"
-    - apt-get install -y cmake libsqlite3-dev libncurses-dev
-    - cmake -S . -B ${BUILD_DEBUG_DIR} -DCMAKE_BUILD_TYPE=Debug 
-    - cmake --build ${BUILD_DEBUG_DIR}
+    - sudo apt-get update
+    - sudo apt-get install -y gcc-11 g++-11
+    
+    - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 100
+    - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-11 100
+    
+    - g++ --version 
+    
+    - cmake -S . -B ${BUILD_DEBUG_DIR} \
+        -DCMAKE_BUILD_TYPE=Debug \
+        -DCMAKE_C_COMPILER=gcc-11 \
+        -DCMAKE_CXX_COMPILER=g++-11 \
+        -DCMAKE_CXX_STANDARD=20
+    - cmake --build ${BUILD_DEBUG_DIR} --parallel 4
   tags: 
     - ubuntu
 
