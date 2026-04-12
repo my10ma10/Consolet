@@ -7,18 +7,15 @@ variables:
   BUILD_DEBUG_DIR: build_debug
   GIT_STRATEGY: clone
   GIT_DEPTH: 0
-  GIT_SUBMODULE_STRATEGY: recursive
-  GIT_SUBMODULE_DEPTH: 0
 
-# before_script:
-#   - git submodule sync --recursive
-#   - git submodule update --init --recursive
+before_script:
+  - git submodule sync --recursive
+  - git submodule update --init --recursive
 
 build-job-debug: 
   stage: build
   script:
-    - git submodule status
-    - sudo apt-get install cmake
+    - apt-get install -y cmake libsqlite3-dev
     - cmake -S . -B ${BUILD_DEBUG_DIR} -DCMAKE_BUILD_TYPE=Debug 
     - cmake --build ${BUILD_DEBUG_DIR}
   tags: 
