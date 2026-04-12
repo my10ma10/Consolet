@@ -5,6 +5,7 @@ stages:
 
 variables:
   BUILD_DEBUG_DIR: build_debug
+  GIT_SUBMODULE_STRATEGY: recursive 
 
 before_script:
   - git submodule sync --recursive
