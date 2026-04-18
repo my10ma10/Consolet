@@ -5,6 +5,7 @@ stages:
 
 variables:
   BUILD_DEBUG_DIR: build_debug
+  ALPINE_IMAGE: alpine:latest
   GIT_STRATEGY: clone
   GIT_DEPTH: 0
 
@@ -13,6 +14,9 @@ before_script:
   - git submodule update --init --recursive
 
 build-job-debug: 
+  image: ${ALPINE_IMAGE}
+  tags: 
+    - docker
   stage: build
   script:
     - sudo apt-get update
@@ -22,6 +26,7 @@ build-job-debug:
     - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-11 100
     
     - g++ --version 
+    - docker --version
     
     - cmake -S . -B ${BUILD_DEBUG_DIR} \
         -DCMAKE_BUILD_TYPE=Debug \
@@ -29,15 +34,14 @@ build-job-debug:
         -DCMAKE_CXX_COMPILER=g++-11 \
         -DCMAKE_CXX_STANDARD=20
     - cmake --build ${BUILD_DEBUG_DIR} --parallel 4
-  tags: 
-    - ubuntu
 
 test-job:
+  image: ${ALPINE_IMAGE}
+  tags: 
+    - docker
   stage: test
   script:
     - ./build/tests/tests
-  tags: 
-    - ubuntu
   artifacts:
     name: ${CI_PROJECT_NAME}_${CI_COMMIT_SHORT_SHA}_test
     paths:
@@ -46,6 +50,9 @@ test-job:
     - build-job-debug
 
 coverage-job:
+  image: ${ALPINE_IMAGE}
+  tags:
+    - docker
   stage: test
   script:
     - mkdir coverage/
@@ -59,7 +66,5 @@ coverage-job:
       - coverage/coverage-html
       - covetage/coverage_final.info
     expire_in: 1 day
-  tags:
-    - ubuntu
   needs: 
     - test-job
