@@ -5,7 +5,7 @@ stages:
 
 variables:
   BUILD_DEBUG_DIR: build_debug
-  ALPINE_IMAGE: alpine:latest
+  CURRENT_IMAGE: ubuntu:24.04
   GIT_STRATEGY: clone
   GIT_DEPTH: 0
 
@@ -14,7 +14,7 @@ before_script:
   - git submodule update --init --recursive
 
 build-job-debug: 
-  image: ${ALPINE_IMAGE}
+  image: ${CURRENT_IMAGE}
   tags: 
     - docker
   stage: build
@@ -36,7 +36,7 @@ build-job-debug:
     - cmake --build ${BUILD_DEBUG_DIR} --parallel 4
 
 test-job:
-  image: ${ALPINE_IMAGE}
+  image: ${CURRENT_IMAGE}
   tags: 
     - docker
   stage: test
@@ -50,7 +50,7 @@ test-job:
     - build-job-debug
 
 coverage-job:
-  image: ${ALPINE_IMAGE}
+  image: ${CURRENT_IMAGE}
   tags:
     - docker
   stage: test
