@@ -22,12 +22,8 @@ build-job-debug:
     - docker
   stage: build
   script:
-    - g++ --version
-    - cmake -S . -B ${BUILD_DEBUG_DIR} \
-        -DCMAKE_BUILD_TYPE=Debug \
-        -DCMAKE_C_COMPILER=gcc-11 \
-        -DCMAKE_CXX_COMPILER=g++-11 \
-        -DCMAKE_CXX_STANDARD=20
+    - apt-get install sqlite3 libncurses-dev
+    - cmake -S . -B ${BUILD_DEBUG_DIR} -DCMAKE_BUILD_TYPE=Debug
     - cmake --build ${BUILD_DEBUG_DIR} --parallel 4
 
 test-job:
