@@ -4,10 +4,9 @@
 #include <vector>
 #include <string>
 
-#include "message.hpp"
+#include "message/message.hpp"
 #include "command_interface.hpp"
 
-#define NUMBER_OF_COMMANDS 6
 
 class ClientSession;
 

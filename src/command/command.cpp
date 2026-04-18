@@ -1,8 +1,8 @@
 #include "command.hpp"
+#include "client/client_session/client_session.hpp"
+#include "clock.cpp"
 
-#include "client_session/client_session.hpp"
-
-#include <format>
+#include <ncurses.h>
 
 // std::vector<ICommand> InfoCommand::makeCommands() const {
 //     std::vector<ICommand> res;
@@ -30,10 +30,19 @@
 bool SendMsgCommand::sendMessage(const std::string& receiverName, const std::string& text) {
     printw("\nTrying to write msg to the db\n");
 
+    auto chat = session_.getLocalDB()->findChat(receiverName);
+    if (!chat.has_value()) {
+        return false;
+    }
+
+    ID_t chat_id = chat->getID().value_or(0);
+
+
     Message message(
-        session_.getLocalDB()->findChat(receiverName)->getID().value_or(0), 
+        chat_id,
         session_.getClientID().value_or(0), 
-        text
+        text,
+        cl::time_since_epoch()
     );
 
 
