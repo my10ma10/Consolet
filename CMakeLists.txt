@@ -20,15 +20,7 @@ add_subdirectory(external/spdlog)
 add_subdirectory(external/json)
 
 
-if (NOT TARGET SQLite3) 
-    find_package(SQLite3 REQUIRED)
-endif()
-if (NOT TARGET spdlog) 
-    find_package(spdlog REQUIRED)
-endif()
-if (NOT TARGET nlohmann_json) 
-    find_package(nlohmann_json REQUIRED)
-endif()
+find_package(SQLite3 REQUIRED)
 
 add_subdirectory(src)
 

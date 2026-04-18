@@ -1,11 +1,11 @@
 #pragma once
 #include <iostream>
 
-#include "json/json.hpp"
-
 #include "db/db.hpp"
 
 #include <chrono>
+#include "nlohmann/json.hpp"
+#include "nlohmann/adl_serializer.hpp"
 
 namespace ch = std::chrono;
 

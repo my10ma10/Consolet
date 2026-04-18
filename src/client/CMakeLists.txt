@@ -18,7 +18,7 @@ add_library(client_session_lib STATIC
     client_session/client_session.cpp 
     client_session/client_session.hpp
 )
-target_compile_definitions(client_session_lib PRIVATE 
+target_compile_definitions(client_session_lib PUBLIC 
     PROJECT_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
 )
 target_link_libraries(client_session_lib PUBLIC 

@@ -9,16 +9,16 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "user.hpp"
-#include "db.hpp"
-#include "message.hpp"
-#include "chat.hpp"
+#include "usr/user.hpp"
+#include "db/db.hpp"
+#include "message/message.hpp"
+#include "chat/chat.hpp"
 #include "serializer/serializer.hpp"
+#include "tcp_socket/tcp_socket.hpp"
 
-#include "spdlog/spdlog.h"
+#include <spdlog/spdlog.h>
 
 #include "defines.hpp"
-#include "tcp_socket/tcp_socket.hpp"
 
 
 class ClientConnection {

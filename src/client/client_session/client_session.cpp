@@ -1,4 +1,8 @@
 #include "client_session.hpp"
+#include "command/command.hpp"
+#include "command/command_factory.hpp"
+
+#include <ncurses.h>
 
 ClientSession::ClientSession(const std::string& ip_address, const std::string& port) 
 {

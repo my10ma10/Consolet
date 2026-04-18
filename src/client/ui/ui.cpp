@@ -1,5 +1,6 @@
 #include "ui.hpp"
-#include "command.hpp"
+#include <termios.h>
+#include <unistd.h>
 
 // UI::UI(std::unique_ptr<CommandInterface>&& ci) 
 //     : ci_(std::move(ci))
