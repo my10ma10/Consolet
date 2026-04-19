@@ -10,6 +10,7 @@ variables:
   GIT_DEPTH: 0
 
 before_script:
+  - apt-get update 
   - apt-get install -y git cmake build-essential libsqlite3-dev libncurses-dev lcov
   - git submodule sync --recursive
   - git submodule update --init --recursive
