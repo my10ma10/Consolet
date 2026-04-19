@@ -10,11 +10,9 @@ variables:
   GIT_DEPTH: 0
 
 before_script:
-  - apt-get update 
-  - apt-get install -y git cmake build-essential libsqlite3-dev libncurses-dev
+  - apt-get install -y git cmake build-essential libsqlite3-dev libncurses-dev lcov
   - git submodule sync --recursive
   - git submodule update --init --recursive
-  - cmake --version && g++ --version
 
 build-job-debug: 
   image: ${CURRENT_IMAGE}
@@ -27,14 +25,12 @@ build-job-debug:
   artifacts:
     paths:
       - ${BUILD_DEBUG_DIR}/Makefile
-      - ${BUILD_DEBUG_DIR}/tests/tests
       - ${BUILD_DEBUG_DIR}/CPackSourceConfig.cmake
       - ${BUILD_DEBUG_DIR}/CPackConfig.cmake
+      - ${BUILD_DEBUG_DIR}/tests/tests
       - ${BUILD_DEBUG_DIR}/src/*.a
       - ${BUILD_DEBUG_DIR}/src/server/server
-      - ${BUILD_DEBUG_DIR}/src/server/*.a
       - ${BUILD_DEBUG_DIR}/src/client/client
-      - ${BUILD_DEBUG_DIR}/src/client/*.a
     expire_in: 1 days
 
 test-job:
@@ -43,11 +39,13 @@ test-job:
     - docker
   stage: test
   script:
-    - ./${BUILD_DEBUG_DIR}/tests/tests
+    - ./${BUILD_DEBUG_DIR}/tests/tests --gtest_output=xml:tests/report.xml
   artifacts:
     name: ${CI_PROJECT_NAME}_${CI_COMMIT_SHORT_SHA}_test
     paths:
-      - ${BUILD_DEBUG_DIR}/*.gcda
+      - ${BUILD_DEBUG_DIR}/src/*.gcda
+    reports:
+      junit: ${BUILD_DEBUG_DIR}/tests/report.xml
     expire_in: 1 day
   needs: 
     - build-job-debug
@@ -60,14 +58,14 @@ coverage-job:
   script:
     - mkdir coverage/
     - lcov --capture --directory . --output-file coverage/coverage.info
-    - lcov --remove coverage/coverage.info '*/external/*' '*/tests/*' -o coverage/coverage_filtered.info
-    - lcov --extract coverage/coverage_filtered.info '*/src/*' -o coverage/coverage_final.info
-    - genhtml coverage/coverage_final.info --output-directory coverage-html
+    - genhtml coverage/coverage.info --output-directory coverage/coverage-html
   artifacts:  
     name: ${CI_PROJECT_NAME}_${CI_COMMIT_SHORT_SHA}_coverage
     paths:  
       - coverage/coverage-html
-      - coverage/coverage_final.info
+      - coverage/coverage.info
+    reports:
+      junit: ${BUILD_DEBUG_DIR}/tests
     expire_in: 1 day
-  needs: 
+  needs:
     - test-job
