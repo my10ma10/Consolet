@@ -64,7 +64,6 @@ coverage-job:
     - mkdir coverage/
     - lcov  --capture \
             --directory ${BUILD_DEBUG_DIR} \
-            --build-directory ${BUILD_DEBUG_DIR} \
             --output-file coverage/coverage.info \
             --no-external 
     - genhtml coverage/coverage.info --output-directory coverage/coverage-html
