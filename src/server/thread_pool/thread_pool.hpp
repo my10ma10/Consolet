@@ -20,5 +20,6 @@ public:
 
 template <typename Func>
 void ThreadPool::enqueue(Func&& func) {
-    tasks_.enqueue(std::forward<Func>(func));
+    auto shared_func = std::make_shared<std::decay_t<Func>>(std::forward<Func>(func));
+    tasks_.enqueue([shared_func]() { (*shared_func)(); });
 }

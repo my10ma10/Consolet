@@ -9,6 +9,15 @@ add_library(server_session_lib STATIC
 target_link_libraries(server_session_lib PUBLIC
     spdlog::spdlog
 )
+
+add_library(thread_pool_lib STATIC
+    thread_pool/thread_pool.cpp
+    thread_pool/thread_pool.hpp    
+    thread_pool/thread_safe_queue.hpp
+)
+target_link_libraries(thread_pool_lib PUBLIC
+    spdlog::spdlog
+)
     
 add_executable(server 
     main.cpp 

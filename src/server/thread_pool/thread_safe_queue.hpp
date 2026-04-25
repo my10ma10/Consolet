@@ -40,26 +40,24 @@ ThreadSafeQueue<T>::~ThreadSafeQueue() {
 
 template <typename T>
 ThreadSafeQueue<T>::ThreadSafeQueue(ThreadSafeQueue&& other) {
-    mtx_ = std::move(other.mtx_);
+    std::scoped_lock lock(other.mtx_);
+
     queue_ = std::move(other.queue_);
-    cv_ = std::move(other.cv_);
     stop_ = other.stop_;
 
-    other.queue_.empty();
-    other.stop();
+    other.stop_ = true;
 }
 
 template <typename T>
 ThreadSafeQueue<T>& ThreadSafeQueue<T>::operator=(ThreadSafeQueue&& other) {
     if (this != &other) {
-        this->stop();
+        std::scoped_lock lock(mtx_, other.mtx_);
 
-        mtx_ = std::move(other.mtx_);
         queue_ = std::move(other.queue_);
-        cv_ = std::move(other.cv_);
         stop_ = other.stop_;
 
-        other.stop();
+        other.stop_ = true;
+        cv_.notify_all();
     }
     return *this;
 }
@@ -72,12 +70,16 @@ std::optional<T> ThreadSafeQueue<T>::pop() {
         return !queue_.empty() || stop_;
     });
 
-    return std::optional<T>();
+    if (queue_.empty()) return std::nullopt;
+
+    T value = std::move(queue_.front());
+    queue_.pop();
+
+    return value;
 }
 
 template <typename T>
-void ThreadSafeQueue<T>::stop()
-{
+void ThreadSafeQueue<T>::stop() {
     {
         std::scoped_lock lock(mtx_);
         stop_ = true;
@@ -86,8 +88,7 @@ void ThreadSafeQueue<T>::stop()
 }
 
 template <typename T>
-bool ThreadSafeQueue<T>::empty() const
-{
+bool ThreadSafeQueue<T>::empty() const {
     std::scoped_lock lock(mtx_);
     return queue_.empty();
 }
