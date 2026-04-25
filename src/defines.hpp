@@ -6,6 +6,7 @@ using ID_t = int64_t;
 inline constexpr std::size_t BUF_SIZE = 4096;
 inline constexpr std::size_t BACKLOG = 10;
 inline constexpr std::size_t NUMBER_OF_COMMANDS = 6;
+inline constexpr std::size_t NUMBER_OF_THREADS = 10;
 inline constexpr const char* PORT = "3490";
 
 namespace Defines {

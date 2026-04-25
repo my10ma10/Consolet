@@ -12,7 +12,7 @@ public:
         db = std::make_shared<ClientCacheDB>();
         db->init(
             ":memory:", std::string(PROJECT_SOURCE_DIR) + 
-                "/assets/sql/create_client_cache_db.sql"
+                "/assets/sql/create_client_cache_DB.sql"
         );
     }
 

@@ -111,7 +111,5 @@ std::vector<std::unique_ptr<ICommand>> ClientSession::selectUI() {
     else if (ui_choice == 3) {
         connection_->start();
     }
-    else {
-        throw std::invalid_argument("Unexpected CI choice");
-    }
+    throw std::invalid_argument("Unexpected CI choice");
 }
