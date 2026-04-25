@@ -103,8 +103,10 @@ CMakeUserPresets.json
 .ionide
 
 ### Project ###
-external/
 coverage/
-.db
+*.db
 .info
 .fake
+.md
+.clang-uml
+.clang-tidy

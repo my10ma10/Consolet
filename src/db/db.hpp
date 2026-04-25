@@ -2,24 +2,22 @@
 #include <sqlite3.h>
 
 #include <iostream>
-#include <type_traits>
 #include <optional>
 #include <memory>
 #include <mutex>
 #include <vector>
 
 #include "chat/chat_type.hpp"
-
-using ID_t = int64_t;
+#include "defines.hpp"
 
 class User;
 class Chat;
 class Message;
-class DBTest;
+class ServerDBTest;
 
 class DB : public std::enable_shared_from_this<DB> {
 public:
-    friend class DBTest;
+    friend class ServerDBTest;
 
 protected:
     sqlite3* db_ = nullptr;
@@ -27,7 +25,7 @@ protected:
 
 public:
     DB() = default;
-    ~DB();
+    virtual ~DB();
 
     DB(const DB& other) = delete;
     DB& operator=(const DB& other) = delete;
@@ -44,48 +42,37 @@ public:
     bool executeWithCallback(Func&& func,
         const std::string& query, Args&&... args);
 
+    virtual bool save(User& user) = 0;
+    virtual std::optional<User> findUser(const std::string& name) = 0;
+    virtual std::optional<User> findUser(ID_t id) = 0;
+
+    virtual bool save(Message& message) = 0;
+    virtual std::optional<Message> findMessage(ID_t chatID, ID_t msgID) = 0;
+    virtual std::optional<Message> findMessage(ID_t chatID, const std::string& text) = 0;
+
+    virtual bool save(Chat& chat) = 0;
+    virtual std::optional<Chat> findChat(ID_t id) = 0;
+    virtual std::optional<Chat> findChat(const std::string& name) = 0;
+
+protected:
+    bool chatExistsInDB(ID_t chatID);
     
-    // -- User --
-    bool save(User& user);
-    bool save(User&& user);
+    ssize_t getTableSize(const std::string& tableName); 
 
-    std::optional<User> findUser(const std::string& name);
-    std::optional<User> findUser(ID_t id);
+    std::vector<Message> getMessagesSince(ID_t chatID, ID_t afterMessageID);
     
-
-    // -- Message --
-    bool save(Message& message);
-    bool save(Message&& message);
-
-    std::optional<Message> findMessage(ID_t chatID, ID_t msgID);
-    std::optional<Message> findMessage(ID_t chatID, const std::string& text);
-
-    bool deleteMessage(ID_t chatID, ID_t msgID);
-
-
-    // -- Chat --
-    bool save(Chat& chat);
-    bool save(Chat&& chat);
-
-    std::optional<Chat> findChat(ID_t id);
-    std::optional<Chat> findChat(const std::string& name);
-
-    bool deleteChat(ID_t chatID);
-    
-private:
-    void addMemberToChat(ID_t userID, ID_t chatId);
-
     std::optional<Chat> makePulledChat(
-        std::vector<ID_t>& userIDs, const std::string& chatType, 
+        const std::vector<ID_t>& userIDs, const std::string& chatType, 
         const std::optional<std::string>& chatName, ID_t chatID
     );
-    
+
+    ID_t getLastMsgID(ID_t chatID);
+
+private:
     void createDB(const std::string& db_name, const std::vector<std::string>& sql);
 
     std::vector<std::string> readSqlQuery(const std::string& filename);
 
-    bool chatExistsInDB(ID_t chatID);
-    
     template <typename T>
     void bind(sqlite3_stmt* stmt, unsigned int index, T&& arg);
 
@@ -93,9 +80,9 @@ private:
     void bindAll(sqlite3_stmt* stmt, unsigned int index, Args&&... args);
 
     bool prepareExecution(const std::string& query, sqlite3_stmt** stmt);
-
-    ssize_t getTableSize(const std::string& tableName); 
 };
+
+class ServerDB;
 
 
 template <typename... Args>
@@ -208,7 +195,7 @@ void DB::bind(sqlite3_stmt* stmt, unsigned int index, T&& arg) {
         }
     }
     else if constexpr (
-                std::is_same_v<DecayedT, nullptr_t> ||
+                std::is_same_v<DecayedT, std::nullptr_t> ||
                 std::is_same_v<DecayedT, std::nullopt_t>
         ) {
         r = sqlite3_bind_null(stmt, index);
@@ -217,4 +204,3 @@ void DB::bind(sqlite3_stmt* stmt, unsigned int index, T&& arg) {
         throw std::invalid_argument("sqlite3_bind was not found\n");
     }
 }
-

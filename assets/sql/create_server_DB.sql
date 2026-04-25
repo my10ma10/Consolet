@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS MessagesHistory (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     sender_id INTEGER NOT NULL,
     chat_id INTEGER NOT NULL,
-    date_time TEXT NOT NULL DEFAULT (datetime('now')),
+    date_time INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
     text TEXT NOT NULL,
     is_read INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (sender_id) REFERENCES User(id),

@@ -1,0 +1,341 @@
+@startuml
+class "ChatType" as C_0010490957158961369653
+class C_0010490957158961369653 {
++ChatType() : void
++ChatType(ChatType::Type type) : void
++ChatType(const std::string & str_type) : void
+..
++operator!=(const ChatType & other) const : bool
++operator==(const ChatType & other) const : bool
+..
+{static} +fromString(const std::string & str) : ChatType::Type
+{static} -getStringToTypeMap() : const std::unordered_map<std::string,Type> &
++getType() const : ChatType::Type
+{static} -getTypeToStringMap() : const std::unordered_map<Type,std::string> &
+{static} +toString(ChatType::Type type) : std::string
++toString() const : std::string
+__
+-type_ : ChatType::Type
+}
+enum "ChatType::Type" as C_0008757362578094368627
+enum C_0008757362578094368627 {
+PERSONAL
+GROUP
+UNKNOWN
+}
+class "DB" as C_0014401941907934956609
+class C_0014401941907934956609 {
++DB() = default : void
++DB(const DB & other) = deleted : void
++DB(DB && other) noexcept : void
++~DB() : void
+..
++operator=(const DB & other) = deleted : DB &
++operator=(DB && other) noexcept : DB &
+..
+-addMemberToChat(ID_t userID, ID_t chatId) : void
+-bind<T>(sqlite3_stmt * stmt, unsigned int index, T && arg) : void
+-bindAll<Args...>(sqlite3_stmt * stmt, unsigned int index, Args &&... args) : void
+-chatExistsInDB(ID_t chatID) : bool
+-createDB(const std::string & db_name, const std::vector<std::string> & sql) : void
++deleteChat(ID_t chatID) : bool
++deleteMessage(ID_t chatID, ID_t msgID) : bool
++execute<Args...>(const std::string & query, Args &&... args) : _Bool
++executeWithCallback<Func,Args...>(Func && func, const std::string & query, Args &&... args) : _Bool
++findChat(const std::string & name) : std::optional<Chat>
++findChat(ID_t id) : std::optional<Chat>
++findMessage(ID_t chatID, const std::string & text) : std::optional<Message>
++findMessage(ID_t chatID, ID_t msgID) : std::optional<Message>
++findPersonalChat(ID_t clientID, ID_t otherID) : std::optional<Chat>
++findUser(ID_t id) : std::optional<User>
++findUser(const std::string & name) : std::optional<User>
+-getTableSize(const std::string & tableName) : ssize_t
++init(const std::string & db_name, const std::string & sqlFile) : void
+-makePulledChat(const std::vector<ID_t> & userIDs, const std::string & chatType, const std::optional<std::string> & chatName, ID_t chatID) : std::optional<Chat>
+-prepareExecution(const std::string & query, sqlite3_stmt ** stmt) : bool
+-readSqlQuery(const std::string & filename) : std::vector<std::string>
++save(Chat && chat) : bool
++save(Chat & chat) : bool
++save(Message && message) : bool
++save(Message & message) : bool
++save(User && user) : bool
++save(User & user) : bool
+__
+#db_ : sqlite3 *
+#executionMutex_ : std::mutex
+}
+class "Message" as C_0014824791405600746196
+class C_0014824791405600746196 {
++Message() = default : void
++Message(ID_t chatID, ID_t senderID, const std::string & text) : void
+..
++operator==(const Message & other) constexpr const = default : bool
+..
++getChatID() const : ID_t
++getID() const : std::optional<ID_t>
++getSenderID() const : ID_t
++getText() const : std::string
++isSavedToDB() const : bool
++setID(ID_t id) : void
+__
+-chatID_ : ID_t
+-msgID_ : std::optional<ID_t>
+-senderID_ : ID_t
+-text_ : std::string
+}
+class "Chat" as C_0002735913247855831522
+class C_0002735913247855831522 {
++Chat() = default : void
++Chat(std::shared_ptr<DB> db, std::vector<User> & users, ChatType::Type type, const std::optional<std::string> & name = std::nullopt) : void
++Chat(std::shared_ptr<DB> db, const std::vector<ID_t> & userIDs, ChatType::Type type, const std::optional<std::string> & name = std::nullopt) : void
+..
++operator==(const Chat & other) const = default : bool
+..
++addMessage(const std::string & message, ID_t senderId) : void
++getID() const : std::optional<ID_t>
++getName() const : std::optional<std::string>
++getStringType() const : std::string
++getType() const : ChatType::Type
++receiveMessage(const std::string & message, ID_t receiverId) : void
++sendMessage(const std::string & message, ID_t senderId) : void
++setID(ID_t newID) : void
+__
+-chatID_ : std::optional<ID_t>
+-db_ : std::shared_ptr<DB>
+-name_ : std::optional<std::string>
+-type_ : ChatType
+-userIDs_ : std::vector<ID_t>
+}
+class "Serializer" as C_0004286815225100151567
+class C_0004286815225100151567 {
+{static} +deserialize(const std::vector<uint8_t> & data) : Message
+{static} -push_value<T>(std::vector<uint8_t> & data, const T & v) : void
+{static} -read_value<T>(const std::vector<uint8_t> & data, size_t & offset, T & value) : void
+{static} +serialize(const Message & msg) : std::vector<uint8_t>
+__
+}
+class "DBTest" as C_0008738286713172310629
+class C_0008738286713172310629 {
+__
+}
+class "User" as C_0013909460443608576024
+class C_0013909460443608576024 {
++User() = default : void
++User(const std::string & name, const std::string & password, std::optional<ID_t> id = std::nullopt) : void
+..
++operator==(const User &) constexpr const = default : bool
+..
++getID() const : std::optional<ID_t>
++getName() const : std::string
++getPassword() const : std::string
++notify() : void
++setID(ID_t newId) : void
++setName(const std::string name) : void
++setPassword(const std::string password) : void
+__
+#id_ : std::optional<ID_t>
+#nickname_ : std::string
+#notificationCount_ : size_t
+#passwordHash_ : std::string
+}
+class "ServerSession" as C_0016018126397260572366
+class C_0016018126397260572366 {
++ServerSession(int client_fd) : void
++~ServerSession() : void
+..
++printMsg() : void
++recieve() : void
++send() : void
++setUser(std::unique_ptr<User> u) : void
++start() : void
++stop() : void
+__
+-is_active : std::atomic<bool>
+-listen_fd : int
+-message : std::string
+-recv_buf : std::vector<char>
+-recv_len : ssize_t
+-user : std::unique_ptr<User>
+}
+class "Server" as C_0007168929316485241399
+class C_0007168929316485241399 {
++Server(const std::string & ip_addr, const std::string & port) : void
++~Server() : void
+..
++addSession() : void
++connect() : void
++getIPaddr() const : std::string
++init() : void
++start() : void
++stop() : void
+__
+-calling_info : struct sockaddr_storage
+-ip_address : std::string
+-is_active : std::atomic<bool>
+-listen_fd : int
+-port : std::string
+-server_info : struct addrinfo *
+-sessions : std::vector<std::unique_ptr<ServerSession>>
+-sessions_mtx : std::mutex
+-socket_fd : int
+}
+abstract "CommandInterface" as C_0001335631386394345710
+abstract C_0001335631386394345710 {
++~CommandInterface() constexpr = default : void
+..
+{abstract} +display(const std::vector<std::unique_ptr<ICommand>> & commands) const = 0 : void
+__
+}
+class "NumberedCI" as C_0014931671099666861106
+class C_0014931671099666861106 {
++display(const std::vector<std::unique_ptr<ICommand>> & commands) const : void
++selectCommand(const std::vector<std::unique_ptr<ICommand>> & commands) const : ICommand *
+__
+}
+class "SlashedCI" as C_0005942993577804412742
+class C_0005942993577804412742 {
++display(const std::vector<std::unique_ptr<ICommand>> & commands) const : void
+__
+}
+abstract "ICommand" as C_0002676627159612885501
+abstract C_0002676627159612885501 {
++~ICommand() constexpr = default : void
+..
+{abstract} +execute() = 0 : void
+{abstract} +getDescription() const = 0 : std::string
+{abstract} +getName() const = 0 : std::string
+__
+}
+abstract "SendMsgCommand" as C_0007242240529049440788
+abstract C_0007242240529049440788 {
++SendMsgCommand(Client & c) : void
+..
+{abstract} +execute() = 0 : void
++getDescription() const : std::string
++getName() const : std::string
++sendMessage(Message && message) : bool
+__
+-client_ : Client &
+}
+class "CommandParser" as C_0017537301259986032613
+class C_0017537301259986032613 {
++CommandParser() = default : void
+..
++parse<Args...>(Args... args) const : void
+__
+-command : std::unique_ptr<ICommand>
+}
+class "UI" as C_0004475862842843248345
+class C_0004475862842843248345 {
++UI(std::shared_ptr<DB> db) : void
++~UI() : void
+..
++display() const : void
+__
+-ci_ : std::unique_ptr<CommandInterface>
+-db_ : std::shared_ptr<DB>
+}
+class "ClientConnection" as C_0000388543919603169737
+class C_0000388543919603169737 {
++ClientConnection() = default : void
++ClientConnection(const std::string & server_ip_address, const std::string & server_port) : void
++~ClientConnection() : void
+..
+-connect() : void
++init() : void
+-printMsg() : void
+-recieveMessage() : void
++sendToServer(const Message & message) : void
++sendToServer(Message && message) : void
++start() : void
+-stop() : void
+__
+-client_info : struct addrinfo *
+-ip_address : std::string
+-is_active : std::atomic<bool>
+-port : std::string
+-recv_buf : std::vector<char>
+-recv_len : int
+-socket_fd : int
+}
+class "Client" as C_0009036792685107474111
+class C_0009036792685107474111 {
++Client() : void
+..
++getLocalDB() const : std::shared_ptr<DB>
++sendToServer(Message && message) const : void
+__
+-connection_ : std::unique_ptr<ClientConnection>
+-localDB_ : std::shared_ptr<DB>
+-ui_ : std::unique_ptr<UI>
+}
+class "CommandFactory" as C_0015690258882473854348
+class C_0015690258882473854348 {
+{static} +createForNumberedCI(Client & c, NumberedCI & nci) : std::vector<std::unique_ptr<ICommand>>
+__
+}
+class "NumberedSendMsgCommand" as C_0014692003904849282686
+class C_0014692003904849282686 {
++NumberedSendMsgCommand(Client & c, NumberedCI & nci) : void
+..
++execute() : void
+-sendToGroupChat() const : void
+-sendToPersonalChat() const : void
+__
+-ci_ : NumberedCI &
+}
+class "ClientSession" as C_0013630447627125416768
+class C_0013630447627125416768 {
++ClientSession(const std::string & ip_address, const std::string & port) : void
+..
++auth() : void
++setConnection(std::unique_ptr<ClientConnection> c) : void
++setUser(std::unique_ptr<User> u) : void
++start() : void
+__
+-client_ : std::unique_ptr<ClientConnection>
+-user_ : std::unique_ptr<User>
+}
+C_0010490957158961369653 o-- C_0008757362578094368627 : -type_
+C_0008757362578094368627 --+ C_0010490957158961369653
+C_0014401941907934956609 ..> C_0013909460443608576024
+C_0014401941907934956609 ..> C_0014824791405600746196
+C_0014401941907934956609 ..> C_0002735913247855831522
+C_0014401941907934956609 <.. C_0008738286713172310629 : +<<friend>>
+C_0014824791405600746196 <.. C_0004286815225100151567 : +<<friend>>
+C_0002735913247855831522 ..> C_0013909460443608576024
+C_0002735913247855831522 ..> C_0008757362578094368627
+C_0002735913247855831522 --> C_0014401941907934956609 : -db_
+C_0002735913247855831522 o-- C_0010490957158961369653 : -type_
+C_0002735913247855831522 <.. C_0014401941907934956609 : +<<friend>>
+C_0004286815225100151567 ..> C_0014824791405600746196
+C_0016018126397260572366 o-- C_0013909460443608576024 : -user
+C_0007168929316485241399 o-- C_0016018126397260572366 : -sessions
+C_0001335631386394345710 ..> C_0002676627159612885501
+C_0014931671099666861106 ..> C_0002676627159612885501
+C_0001335631386394345710 <|-- C_0014931671099666861106
+C_0005942993577804412742 ..> C_0002676627159612885501
+C_0001335631386394345710 <|-- C_0005942993577804412742
+C_0007242240529049440788 ..> C_0014824791405600746196
+C_0007242240529049440788 --> C_0009036792685107474111 : -client_
+C_0002676627159612885501 <|-- C_0007242240529049440788
+C_0017537301259986032613 o-- C_0002676627159612885501 : -command
+C_0004475862842843248345 o-- C_0001335631386394345710 : -ci_
+C_0004475862842843248345 --> C_0014401941907934956609 : -db_
+C_0000388543919603169737 ..> C_0014824791405600746196
+C_0009036792685107474111 ..> C_0014824791405600746196
+C_0009036792685107474111 o-- C_0000388543919603169737 : -connection_
+C_0009036792685107474111 --> C_0014401941907934956609 : -localDB_
+C_0009036792685107474111 o-- C_0004475862842843248345 : -ui_
+C_0015690258882473854348 ..> C_0009036792685107474111
+C_0015690258882473854348 ..> C_0014931671099666861106
+C_0015690258882473854348 ..> C_0002676627159612885501
+C_0014692003904849282686 ..> C_0009036792685107474111
+C_0014692003904849282686 --> C_0014931671099666861106 : -ci_
+C_0007242240529049440788 <|-- C_0014692003904849282686
+C_0013630447627125416768 o-- C_0013909460443608576024 : -user_
+C_0013630447627125416768 o-- C_0000388543919603169737 : -client_
+
+'Generated with clang-uml, version 0.6.2
+'LLVM version Ubuntu clang version 15.0.7
+@enduml

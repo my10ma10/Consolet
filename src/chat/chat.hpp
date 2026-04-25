@@ -4,7 +4,7 @@
 #include <cassert>
 #include <string>
 
-#include "db/db.hpp"
+#include "db/server_db.hpp"
 #include "chat_type.hpp"
 
 class Chat {
@@ -30,7 +30,7 @@ public:
     
     Chat(
         std::shared_ptr<DB> db,
-        std::vector<ID_t>& userIDs,
+        const std::vector<ID_t>& userIDs,
         ChatType::Type type,
         const std::optional<std::string>& name = std::nullopt
     );
@@ -47,16 +47,18 @@ public:
     std::optional<std::string> getName() const { return name_; }
     std::optional<ID_t> getID() const { return chatID_; }
 
+    std::vector<ID_t> getUsersIDs() const { return userIDs_; }
+
     bool operator==(const Chat& other) const = default;
 };
 
 // class Chat {
-//     std::shared_ptr<DB> db_ = nullptr;
+//     std::shared_ptr<ServerDB> db_ = nullptr;
 //     ID_t chatID_;
 
 // public:
 //     Chat() = default;
-//     Chat(std::shared_ptr<DB> db);
+//     Chat(std::shared_ptr<ServerDB> db);
 
 //     virtual ~Chat() = default;
 //     virtual void sendMessage(const std::string& message, ID_t senderId) = 0;

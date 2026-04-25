@@ -3,36 +3,30 @@
 #include <vector>
 #include <atomic>
 #include <mutex>
+#include <memory>
 
 #include "server_session/server_session.hpp"
+#include "tcp_socket/tcp_socket.hpp"
+#include "defines.hpp"
 
 
 class Server {
-    std::atomic<bool> is_active{true};
-    std::mutex sessions_mtx;
-    std::vector<std::unique_ptr<ServerSession> > sessions;
+    std::atomic<bool> is_active_{true};
+    std::mutex sessions_mtx_;
+    std::vector<std::unique_ptr<ServerSession>> sessions_;
     
-    struct addrinfo * server_info; // содержит sockaddr
-    struct sockaddr_storage calling_info;
+    std::string ip_address_;
+    std::string port_;
 
-    std::string ip_address;
-    std::string port;
-
-    int socket_fd;
-    int listen_fd;
+    Socket listen_socket_;
 
 public:
     Server(const std::string& ip_addr, const std::string& port);
     ~Server();
     
-    void init();
-    void connect();
-
     void start();
     void stop();
 
     void addSession();
 
-
-    std::string getIPaddr() const;
 };
