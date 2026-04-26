@@ -8,7 +8,7 @@
 #include "command_interface.hpp"
 
 
-class ClientSession;
+class Client;
 
 class ICommand {
 protected:
@@ -36,9 +36,9 @@ public:
 // };
 
 class SendMsgCommand : public ICommand {
-    ClientSession& session_;
+    Client& client_;
 public:
-    SendMsgCommand(ClientSession& s) : session_(s) {}
+    SendMsgCommand(Client& s) : client_(s) {}
 
     void execute() override = 0; 
 

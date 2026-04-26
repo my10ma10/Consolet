@@ -14,17 +14,6 @@ target_include_directories(ui_lib PUBLIC
 )
 
 
-add_library(client_session_lib STATIC
-    client_session/client_session.cpp 
-    client_session/client_session.hpp
-)
-target_compile_definitions(client_session_lib PUBLIC 
-    PROJECT_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
-)
-target_link_libraries(client_session_lib PUBLIC 
-    command_lib
-)
-
 add_library(client_connection_lib STATIC
     client_connection/client_connection.cpp
     client_connection/client_connection.hpp
@@ -43,15 +32,13 @@ add_executable(client
 target_compile_definitions(client PRIVATE 
     PROJECT_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
 )
-
-
 target_link_libraries(client PRIVATE
     spdlog::spdlog
-    client_session_lib
     client_connection_lib
     ui_lib
     message_lib
     chat_lib
     serializer_lib
     db_lib
+    command_lib
 )

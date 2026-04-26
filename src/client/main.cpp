@@ -1,15 +1,15 @@
 #include <fstream>
 
-#include "client_session/client_session.hpp"
+#include "client/client.hpp"
 #include "defines.hpp"
 
 int main() {
     spdlog::set_level(spdlog::level::debug);
 
     try {
-        ClientSession session("127.0.0.1", PORT);
-        session.auth();
-        session.start();
+        Client client("127.0.0.1", PORT);
+        client.auth();
+        client.start();
         return 0;
     }
     catch (std::exception& ex) {

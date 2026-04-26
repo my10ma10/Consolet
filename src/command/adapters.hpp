@@ -10,7 +10,7 @@ class NumberedSendMsgCommand : public SendMsgCommand {
     NumberedCI& ci_;
 
 public:
-    NumberedSendMsgCommand(ClientSession& s, NumberedCI& nci);
+    NumberedSendMsgCommand(Client& s, NumberedCI& nci);
     
     void execute() override;
 
@@ -23,7 +23,7 @@ class SlashedSendMsgCommand : public SendMsgCommand {
     std::string msg_;
 
 public:
-    SlashedSendMsgCommand(ClientSession& s, SlashedCI& ci);
+    SlashedSendMsgCommand(Client& s, SlashedCI& ci);
     void setArgs(const std::string& username, const std::string& msg);
 
     void execute() override;

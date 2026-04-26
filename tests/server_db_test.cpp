@@ -2,7 +2,7 @@
 
 #include "db/server_db.hpp"
 #include "chat/chat.hpp"
-#include "usr/user.hpp"
+#include "user/user.hpp"
 #include "message/message.hpp"
 #include "clock.cpp"
 

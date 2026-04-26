@@ -1,21 +1,43 @@
 #pragma once
+#include <memory>
+#include <vector>
 
-// #include "client_connection/client_connection.hpp"
-// #include "command.hpp"
-// #include "db/client_cache_db.hpp"
+#include "defines.hpp"
 
-// class Client {    
-//     std::unique_ptr<ClientConnection> connection_;
-//     std::shared_ptr<DB> localDB_;
+#include "user/user.hpp"
+#include "client_connection/client_connection.hpp"
+#include "db/client_cache_db.hpp"
 
-//     // std::unique_ptr<UI> ui_;
+#include "ui/ui.hpp"
+#include "command/command_interface.hpp"
 
-// public:
-//     Client();
+class Client {
+    std::optional<ID_t> clientID_ = std::nullopt;
 
-//     void sendToServer(Message&& message) const;
+    // std::unique_ptr<User> user_;
+    std::unique_ptr<ClientConnection> connection_;
 
-//     void run();
+    std::shared_ptr<DB> localDB_;
 
-//     std::shared_ptr<DB> getLocalDB() const { return localDB_; }
-// };
+    std::unique_ptr<CommandInterface> ci_;
+public:
+    Client(
+        const std::string& ip_address, 
+        const std::string& port
+    );
+
+    void auth();
+    void start();
+
+    
+    void sendToServer(Message&& message) const;
+
+    std::string getHelpMsg() const;
+    std::shared_ptr<DB> getLocalDB() const { return localDB_; }
+    std::optional<ID_t> getClientID() const { return clientID_; };
+
+    void setConnection(std::unique_ptr<ClientConnection> c);
+
+private:
+    std::vector<std::unique_ptr<ICommand>> selectUI();
+};

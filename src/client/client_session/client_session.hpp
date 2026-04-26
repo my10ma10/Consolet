@@ -11,7 +11,7 @@
 #include "ui/ui.hpp"
 #include "command/command_interface.hpp"
 
-class ClientSession {
+class Client {
     std::optional<ID_t> clientID_ = std::nullopt;
 
     // std::unique_ptr<User> user_;
@@ -21,7 +21,7 @@ class ClientSession {
 
     std::unique_ptr<CommandInterface> ci_;
 public:
-    ClientSession(
+    Client(
         const std::string& ip_address, 
         const std::string& port
     );

@@ -9,8 +9,8 @@
 class CommandFactory {
 public:
     static std::vector<std::unique_ptr<ICommand>> 
-        createForNumberedCI(ClientSession& session, NumberedCI& ci);
+        createForNumberedCI(Client& session, NumberedCI& ci);
 
     static std::vector<std::unique_ptr<ICommand>> 
-        createForSlashedCI(ClientSession& session, SlashedCI& ci);
+        createForSlashedCI(Client& session, SlashedCI& ci);
 };

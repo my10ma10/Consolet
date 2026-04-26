@@ -8,7 +8,7 @@
         === NumberedSendMsgCommand ===
 */
 
-NumberedSendMsgCommand::NumberedSendMsgCommand(ClientSession& s, NumberedCI& nci) 
+NumberedSendMsgCommand::NumberedSendMsgCommand(Client& s, NumberedCI& nci) 
     : SendMsgCommand(s), ci_(nci)
 {}
 
@@ -32,7 +32,7 @@ void NumberedSendMsgCommand::execute() {
         === SlashedSendMsgCommand ===
 */
 
-SlashedSendMsgCommand::SlashedSendMsgCommand(ClientSession& s, SlashedCI& ci) 
+SlashedSendMsgCommand::SlashedSendMsgCommand(Client& s, SlashedCI& ci) 
     : SendMsgCommand(s), ci_(ci)
 {}
 

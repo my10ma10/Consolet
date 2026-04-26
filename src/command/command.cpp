@@ -1,5 +1,5 @@
 #include "command.hpp"
-#include "server/client_session/client_session.hpp"
+#include "client/client.hpp"
 #include "clock.cpp"
 
 #include <ncurses.h>
@@ -30,7 +30,7 @@
 bool SendMsgCommand::sendMessage(const std::string& receiverName, const std::string& text) {
     printw("\nTrying to write msg to the db\n");
 
-    auto chat = session_.getLocalDB()->findChat(receiverName);
+    auto chat = client_.getLocalDB()->findChat(receiverName);
     if (!chat.has_value()) {
         return false;
     }
@@ -40,7 +40,7 @@ bool SendMsgCommand::sendMessage(const std::string& receiverName, const std::str
 
     Message message(
         chat_id,
-        session_.getClientID().value_or(0), 
+        client_.getClientID().value_or(0), 
         text,
         cl::time_since_epoch()
     );
@@ -50,9 +50,9 @@ bool SendMsgCommand::sendMessage(const std::string& receiverName, const std::str
         return false;
     }
 
-    session_.sendToServer(std::move(message));
+    client_.sendToServer(std::move(message));
 
-    session_.getLocalDB()->save(message);
+    client_.getLocalDB()->save(message);
     
     return true;
 }
@@ -65,8 +65,8 @@ bool SendMsgCommand::sendMessage(const std::string& receiverName, const std::str
 // {
 
 //     Message message(
-//         session_.getLocalDB()->findChat(receiverName)->getID().value_or(0), 
-//         session_.getClientID().value_or(0), 
+//         client_.getLocalDB()->findChat(receiverName)->getID().value_or(0), 
+//         client_.getClientID().value_or(0), 
 //         text
 //     );
 
