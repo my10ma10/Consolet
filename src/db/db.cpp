@@ -1,5 +1,5 @@
 #include "db.hpp"
-#include "usr/user.hpp"
+#include "user/user.hpp"
 #include "chat/chat.hpp"
 #include "message/message.hpp"
 

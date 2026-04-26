@@ -20,8 +20,8 @@ target_link_libraries(message_lib PUBLIC
 )
 
 add_library(user_lib STATIC
-    usr/user.cpp
-    usr/user.hpp
+    user/user.cpp
+    user/user.hpp
 )
 
 add_library(chat_lib STATIC 

@@ -1,7 +1,7 @@
 #include "server_db.hpp"
 
 #include "message/message.cpp"
-#include "usr/user.cpp"
+#include "user/user.cpp"
 #include "chat/chat.cpp"
 
 #include <optional>

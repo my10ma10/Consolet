@@ -9,7 +9,7 @@
 #include <poll.h>
 #include <fcntl.h>
 
-#include "usr/user.hpp"
+#include "user/user.hpp"
 #include "tcp_socket/tcp_socket.hpp"
 
 class ServerSession {

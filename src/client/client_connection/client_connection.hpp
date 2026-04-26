@@ -9,7 +9,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "usr/user.hpp"
+#include "user/user.hpp"
 #include "db/db.hpp"
 #include "message/message.hpp"
 #include "chat/chat.hpp"

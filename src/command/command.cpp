@@ -1,5 +1,5 @@
 #include "command.hpp"
-#include "client/client_session/client_session.hpp"
+#include "server/client_session/client_session.hpp"
 #include "clock.cpp"
 
 #include <ncurses.h>

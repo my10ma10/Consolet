@@ -25,7 +25,6 @@ target_link_libraries(client_session_lib PUBLIC
     command_lib
 )
 
-
 add_library(client_connection_lib STATIC
     client_connection/client_connection.cpp
     client_connection/client_connection.hpp

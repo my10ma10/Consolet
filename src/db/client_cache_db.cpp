@@ -1,7 +1,7 @@
 #include "client_cache_db.hpp"
 
 #include "chat/chat.hpp"
-#include "usr/user.hpp"
+#include "user/user.hpp"
 #include "message/message.hpp"
 
 void ClientCacheDB::syncChat(ID_t chatID, std::shared_ptr<ServerDB> server_db) {

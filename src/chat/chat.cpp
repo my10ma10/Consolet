@@ -1,5 +1,5 @@
 #include "chat/chat.hpp"
-#include "usr/user.hpp"
+#include "user/user.hpp"
 
 #include <algorithm>
 

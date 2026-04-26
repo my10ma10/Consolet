@@ -5,7 +5,7 @@
 #include "defines.hpp"
 
 #include "user/user.hpp"
-#include "client/client_connection/client_connection.hpp"
+#include "client_connection/client_connection.hpp"
 #include "db/client_cache_db.hpp"
 
 #include "ui/ui.hpp"
