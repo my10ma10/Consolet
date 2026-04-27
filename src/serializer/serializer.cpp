@@ -1,7 +1,7 @@
 #include "serializer.hpp"
 
-#include <optional>
-
+#include "json.cpp"
+/*
 std::vector<uint8_t> Serializer::serialize(const Message& msg) {
     std::vector<uint8_t> data;
     data.reserve(sizeof(Message));
@@ -52,4 +52,31 @@ void Serializer::read_value<std::string>(
 
     str.assign(reinterpret_cast<const char*>(&data[offset]), len);
     offset += len;
+}
+*/
+
+std::string Serializer::serialize(const Message& msg) {
+    try {
+        json j = msg;
+        return j.dump();
+    }
+    catch (const json::exception& ex) {
+        spdlog::error("Serialization error: {}", ex.what());
+        throw std::runtime_error("Failed to serialize Message");
+    }
+}
+
+Message Serializer::deserialize(const std::string_view& data) {
+    try {
+        json j = json::parse(data);
+        return j.get<Message>();
+    }
+    catch (const json::exception& ex) {
+        spdlog::error("Deserialization error: {}", ex.what());
+        throw std::runtime_error("Invalid JSON received");
+    }
+    catch (const std::exception& ex) {
+        spdlog::error("Unrecognized error: {}", ex.what());
+        throw std::runtime_error("Failed to deserialize Message");
+    }
 }
