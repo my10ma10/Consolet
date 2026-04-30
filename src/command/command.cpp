@@ -30,8 +30,9 @@
 bool SendMsgCommand::sendMessage(const std::string& receiverName, const std::string& text) {
     printw("\nTrying to write msg to the db\n");
 
-    auto chat = client_.getLocalDB()->findChat(receiverName);
+    auto chat = client_.getLocalDB()->findChatWith(receiverName);
     if (!chat.has_value()) {
+        spdlog::error("SendMsgCommand::sendMessage: chat is null");
         return false;
     }
 

@@ -15,14 +15,17 @@ NumberedSendMsgCommand::NumberedSendMsgCommand(Client& s, NumberedCI& nci)
 void NumberedSendMsgCommand::execute() {
     std::string text, receiver_name;
 
-    text.reserve(MESSAGE_MAX_SIZE);
-    receiver_name.reserve(CHATNAME_MAX_SIZE);
+    text.resize(MESSAGE_MAX_SIZE);
+    receiver_name.resize(CHATNAME_MAX_SIZE);
     
     printw("\nEnter receiver name: \n");
-    getstr(receiver_name.data());
+    getnstr(receiver_name.data(), MESSAGE_MAX_SIZE - 1);
 
     printw("\nEnter message: \n");
-    getstr(text.data());
+    getnstr(text.data(), CHATNAME_MAX_SIZE - 1);
+
+    receiver_name.resize(std::strlen(receiver_name.c_str()));
+    text.resize(std::strlen(text.c_str()));
 
     sendMessage(receiver_name, text);
 }

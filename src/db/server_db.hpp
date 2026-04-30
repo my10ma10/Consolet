@@ -35,6 +35,7 @@ public:
     std::optional<Chat> findChat(ID_t id) override;
     std::optional<Chat> findChat(const std::string& name) override;
 
+    std::optional<Chat> findChatWith(const std::string& username);
     // std::optional<Chat> findPersonalChat(ID_t clientID, ID_t otherID);
     // std::optional<Chat> findPersonalChat(ID_t clientID, const std::string otherName);
 

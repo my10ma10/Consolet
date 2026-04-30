@@ -1,5 +1,6 @@
 #include "server.hpp"
 #include "db/db.hpp"
+#include "thread_pool/thread_pool.hpp"
 #include "defines.hpp"
 
 #include "spdlog/spdlog.h"
@@ -8,8 +9,8 @@
 #include <iostream>
 
 int main() {
-    
     spdlog::set_level(spdlog::level::debug);
+
     try {
         Server server("127.0.0.1", PORT);
         server.start();

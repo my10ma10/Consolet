@@ -53,6 +53,7 @@ public:
     virtual bool save(Chat& chat) = 0;
     virtual std::optional<Chat> findChat(ID_t id) = 0;
     virtual std::optional<Chat> findChat(const std::string& name) = 0;
+    virtual std::optional<Chat> findChatWith(const std::string& username) = 0;
 
 protected:
     bool chatExistsInDB(ID_t chatID);

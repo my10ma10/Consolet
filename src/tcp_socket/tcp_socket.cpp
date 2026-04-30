@@ -149,7 +149,7 @@ std::optional<std::string> Socket::recv() {
         return std::nullopt;
     }
     else if (received == 0) { 
-        spdlog::warn("The connection was closed by client {}", socket_fd_);
+        spdlog::warn("The connection closed by client {}", socket_fd_);
         Socket::shutdown();
     }
     auto recv_str = std::string(recv_buf.begin(), recv_buf.end());

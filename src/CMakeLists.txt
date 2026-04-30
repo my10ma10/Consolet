@@ -3,20 +3,13 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/src/client
 )
 
-add_library(json_lib STATIC 
-    json/json.cpp
-)  
-target_link_libraries(json_lib PUBLIC 
-    nlohmann_json
-)
-
 
 add_library(message_lib STATIC 
     message/message.cpp    
     message/message.hpp  
 )
 target_link_libraries(message_lib PUBLIC 
-    json_lib
+    nlohmann_json
 )
 
 add_library(user_lib STATIC
@@ -75,9 +68,12 @@ target_link_libraries(tcp_socket_lib PUBLIC
 add_library(serializer_lib STATIC
     serializer/serializer.cpp
     serializer/serializer.hpp
+    serializer/json.cpp
 )
 target_link_libraries(serializer_lib PUBLIC 
     message_lib
+    nlohmann_json
+    spdlog::spdlog
 )
 
 

@@ -169,3 +169,33 @@ std::optional<Chat> ClientCacheDB::findChat(const std::string& chatName) {
 
     return makePulledChat(userIDs, chatType, chatName, chatID);
 }
+
+std::optional<Chat> ClientCacheDB::findChatWith(const std::string& username) {
+    std::string chatType;
+    ID_t chatID;
+    std::vector<ID_t> userIDs;
+
+    bool exec_res = executeWithCallback([&] (sqlite3_stmt* stmt) {
+        const unsigned char* type = sqlite3_column_text(stmt, 0);
+        if (!type) return true;
+
+        chatType = reinterpret_cast<const char*>(type);
+        chatID = sqlite3_column_int64(stmt, 1);
+        userIDs.emplace_back(sqlite3_column_int64(stmt, 2));
+        return true;
+    },
+        R"(SELECT 
+            c.id, 
+            c.type, 
+            c.name, 
+            c.cache_time
+        FROM Chat c
+        JOIN ChatMembers cm ON c.id = cm.chat_id
+        JOIN User u ON cm.user_id = u.id
+        WHERE u.name = ? AND c.type = 'personal';)", username
+    );
+
+    if (!exec_res) return std::nullopt;
+
+    return makePulledChat(userIDs, chatType, std::string{}, chatID);
+}

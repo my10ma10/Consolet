@@ -11,12 +11,13 @@ target_link_libraries(thread_pool_lib PUBLIC
     spdlog::spdlog
 )
 
-add_library(server_session_lib STATIC
-    server_session/server_session.cpp
-    server_session/server_session.hpp
+add_library(client_session_lib STATIC
+    client_session/client_session.cpp
+    client_session/client_session.hpp
 )
-target_link_libraries(server_session_lib PUBLIC
+target_link_libraries(client_session_lib PUBLIC
     spdlog::spdlog
+    message_lib
 )
 
 add_executable(server 
@@ -25,8 +26,7 @@ add_executable(server
     server.hpp
 )
 target_link_libraries(server PRIVATE
-    server_session_lib
-    message_lib
+    client_session_lib
     chat_lib
     db_lib
     tcp_socket_lib

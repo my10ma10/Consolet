@@ -1,32 +1,33 @@
-#pragma once
-#include <memory>
-#include <vector>
-#include <atomic>
-#include <thread>
-#include <mutex>
+// #pragma once
 
-#include <unistd.h>
-#include <poll.h>
-#include <fcntl.h>
+// #include <memory>
+// #include <vector>
+// #include <atomic>
+// #include <thread>
+// #include <mutex>
 
-#include "user/user.hpp"
-#include "tcp_socket/tcp_socket.hpp"
+// #include <unistd.h>
+// #include <poll.h>
+// #include <fcntl.h>
 
-class ServerSession {
-    std::unique_ptr<User> user;
-    std::atomic<bool> is_active{true};
+// #include "user/user.hpp"
+// #include "tcp_socket/tcp_socket.hpp"
 
-    Socket listen_socket_;
+// class ServerSession {
+//     std::unique_ptr<User> user;
+//     std::atomic<bool> is_active{true};
 
-    std::string message_;
+//     Socket listen_socket_;
+
+//     std::string message_;
     
-public:
-    ServerSession(int client_fd);
-    ServerSession(Socket&& socket);
-    ~ServerSession();
+// public:
+//     ServerSession(int client_fd);
+//     ServerSession(Socket&& socket);
+//     ~ServerSession();
     
-    void start();
-    void stop();
+//     void start();
+//     void stop();
 
-    void setUser(std::unique_ptr<User> u);
-};
+//     void setUser(std::unique_ptr<User> u);
+// };

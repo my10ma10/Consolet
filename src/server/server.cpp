@@ -12,34 +12,30 @@ Server::~Server() {
 
 
 void Server::start() {  
-    if (!listen_socket_.bind(port_)) {
+    if (!socket_.bind(port_)) {
         std::exit(1);
     }
-    if (!listen_socket_.listen(BACKLOG)) {
+    if (!socket_.listen(BACKLOG)) {
         std::exit(1);
     }
     
     while (is_active_) {
-        addSession();
+        auto listen_socket = socket_.accept();
+
+        auto session = std::make_unique<ClientSession>(std::move(listen_socket.value()));
+
+        std::thread session_thread(&ClientSession::start, session.get());
+        
+        session_thread.detach();
+        {
+            std::scoped_lock lock(sessions_mtx_);
+            client_sessions_.emplace_back(std::move(session));
+        }
     }
 }
 
 void Server::stop() {
     is_active_ = false;
-}
-
-void Server::addSession() {
-    auto client_socket = listen_socket_.accept();
-
-    auto session = std::make_unique<ServerSession>(std::move(*client_socket));
-
-    std::thread session_thread(&ServerSession::start, session.get());
-    
-    session_thread.detach();
-    {
-        std::scoped_lock lock(sessions_mtx_);
-        sessions_.emplace_back(std::move(session));
-    }
 }
 
 // std::string Server::getIPaddr() const {

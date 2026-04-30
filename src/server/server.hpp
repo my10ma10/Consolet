@@ -4,8 +4,9 @@
 #include <atomic>
 #include <mutex>
 #include <memory>
+#include <thread>
 
-#include "server_session/server_session.hpp"
+#include "client_session/client_session.hpp"
 #include "tcp_socket/tcp_socket.hpp"
 #include "defines.hpp"
 
@@ -13,12 +14,12 @@
 class Server {
     std::atomic<bool> is_active_{true};
     std::mutex sessions_mtx_;
-    std::vector<std::unique_ptr<ServerSession>> sessions_;
+    std::vector<std::unique_ptr<ClientSession>> client_sessions_;
     
     std::string ip_address_;
     std::string port_;
 
-    Socket listen_socket_;
+    Socket socket_;
 
 public:
     Server(const std::string& ip_addr, const std::string& port);
@@ -26,7 +27,5 @@ public:
     
     void start();
     void stop();
-
-    void addSession();
 
 };

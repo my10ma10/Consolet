@@ -45,10 +45,12 @@ public:
     void sendToServer(const Message& message);
     void sendToServer(Message&& message);
 
+    bool recvAuthStatus();
+
     void stop();
 
 private:
-    std::string recv();
+    Message recv();
 
     void printMsg(const std::string& msg);
 };

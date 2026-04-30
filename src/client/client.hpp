@@ -19,7 +19,7 @@ class Client {
 
     std::shared_ptr<DB> localDB_;
 
-    std::unique_ptr<CommandInterface> ci_;
+    std::unique_ptr<CommandInterface> cli_;
 public:
     Client(
         const std::string& ip_address, 
@@ -37,6 +37,8 @@ public:
     std::optional<ID_t> getClientID() const { return clientID_; };
 
     void setConnection(std::unique_ptr<ClientConnection> c);
+
+    bool authStatus();
 
 private:
     std::vector<std::unique_ptr<ICommand>> selectUI();
