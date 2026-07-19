@@ -18,24 +18,38 @@ void Server::start() {
     if (!socket_.listen(BACKLOG)) {
         std::exit(1);
     }
+
+    std::unique_ptr<ClientSession> session = Server::accept();
+
+    ThreadPool pool;
     
-    while (is_active_) {
-        auto listen_socket = socket_.accept();
+    while (true) {
+        while (is_active_) {
+            pool.enqueue([session = std::move(session), this, &pool]() mutable {
+                std::thread session_thread([session = std::move(session)]() mutable {
+                    session->start();
+                });
 
-        auto session = std::make_unique<ClientSession>(std::move(listen_socket.value()));
-
-        std::thread session_thread(&ClientSession::start, session.get());
-        
-        session_thread.detach();
-        {
-            std::scoped_lock lock(sessions_mtx_);
-            client_sessions_.emplace_back(std::move(session));
+                
+                
+                session_thread.detach();
+                {
+                    std::scoped_lock lock(sessions_mtx_);
+                    client_sessions_.emplace_back(std::move(session));
+                }
+            });
         }
     }
 }
 
 void Server::stop() {
     is_active_ = false;
+}
+
+std::unique_ptr<ClientSession> Server::accept() {
+    return std::make_unique<ClientSession>(
+        std::move(socket_.accept().value_or(Socket{}))
+    );
 }
 
 // std::string Server::getIPaddr() const {

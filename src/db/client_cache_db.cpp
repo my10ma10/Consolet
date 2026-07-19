@@ -4,6 +4,8 @@
 #include "user/user.hpp"
 #include "message/message.hpp"
 
+#include "spdlog/spdlog.h"
+
 void ClientCacheDB::syncChat(ID_t chatID, std::shared_ptr<ServerDB> server_db) {
     // auto pulled_chat = findChat(chatID);
     
@@ -58,12 +60,23 @@ std::optional<User> ClientCacheDB::findUser(ID_t id) {
 }
 
 bool ClientCacheDB::save(Message& message) {
-    bool status = execute(
-        "INSERT INTO MessagesHistory (id, sernder_id, chat_id, date_time, text) "
-        "VALUES (?, ?, ?, ?, ?)",
-        message.getID(), message.getSenderID(), message.getChatID(), 
-        std::time(nullptr), message.getText()
-    );
+    bool status = false;
+    if (message.getID().has_value()) {
+        status = execute(
+            "INSERT INTO MessagesHistory (id, sender_id, chat_id, date_time, text) "
+            "VALUES (?, ?, ?, ?, ?)",
+            message.getID().value(), message.getSenderID(), message.getChatID(), 
+            std::time(nullptr), message.getText()
+        );
+    }
+    else {
+        status = execute(
+            "INSERT INTO MessagesHistory (sender_id, chat_id, date_time, text) "
+            "VALUES (?, ?, ?, ?)",
+            message.getSenderID(), message.getChatID(), 
+            std::time(nullptr), message.getText()
+        );
+    }
     return status;
 }
 
@@ -161,7 +174,7 @@ std::optional<Chat> ClientCacheDB::findChat(const std::string& chatName) {
         FROM Chat c
         JOIN ChatMembers cm ON cm.chat_id = c.id
         JOIN User u ON u.id = cm.user_id
-        WHERE c.name = ?
+        WHERE u.name = ?
         ORDER BY u.id;)", chatName
     );
 
@@ -184,18 +197,28 @@ std::optional<Chat> ClientCacheDB::findChatWith(const std::string& username) {
         userIDs.emplace_back(sqlite3_column_int64(stmt, 2));
         return true;
     },
-        R"(SELECT 
-            c.id, 
-            c.type, 
-            c.name, 
-            c.cache_time
+        R"(
+        SELECT
+            c.type,
+            c.id,
+            cm2.user_id
         FROM Chat c
-        JOIN ChatMembers cm ON c.id = cm.chat_id
-        JOIN User u ON cm.user_id = u.id
-        WHERE u.name = ? AND c.type = 'personal';)", username
+        JOIN ChatMembers cm1 ON cm1.chat_id = c.id
+        JOIN User u ON u.id = cm1.user_id
+        JOIN ChatMembers cm2 ON cm2.chat_id = c.id
+        WHERE u.name = ?
+        AND c.type = 'personal'
+        ORDER BY cm2.user_id;
+        )", username
     );
 
     if (!exec_res) return std::nullopt;
+
+    // auto senderId = findUser(username)->getID();
+    // if (!senderId) {
+    //     spdlog::warn("ClientCacheDB::findChatWith find sender id error");
+    // }
+    // userIDs.emplace_back(senderId.value());
 
     return makePulledChat(userIDs, chatType, std::string{}, chatID);
 }

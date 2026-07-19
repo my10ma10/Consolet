@@ -1,5 +1,6 @@
 #pragma once
 #include <sqlite3.h>
+#include "spdlog/spdlog.h"
 
 #include <iostream>
 #include <optional>
@@ -167,7 +168,8 @@ void DB::bind(sqlite3_stmt* stmt, unsigned int index, T&& arg) {
     if constexpr (std::is_same_v<DecayedT, std::optional<std::string>>) {
         if (arg.has_value()) {
             bind(stmt, index, arg.value());
-        } else {
+        } 
+        else {
             r = sqlite3_bind_null(stmt, index);
         }
     }
@@ -202,6 +204,7 @@ void DB::bind(sqlite3_stmt* stmt, unsigned int index, T&& arg) {
         r = sqlite3_bind_null(stmt, index);
     }
     else {
-        throw std::invalid_argument("sqlite3_bind was not found\n");
+        spdlog::error("sqlite3_bind not found: {}", typeid(DecayedT).name());
+        throw std::invalid_argument("sqlite3_bind not found\n");
     }
 }

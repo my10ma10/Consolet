@@ -28,7 +28,7 @@
 // }
 
 bool SendMsgCommand::sendMessage(const std::string& receiverName, const std::string& text) {
-    printw("\nTrying to write msg to the db\n");
+    spdlog::debug("Trying to write msg to the db");
 
     auto chat = client_.getLocalDB()->findChatWith(receiverName);
     if (!chat.has_value()) {
@@ -36,12 +36,13 @@ bool SendMsgCommand::sendMessage(const std::string& receiverName, const std::str
         return false;
     }
 
-    ID_t chat_id = chat->getID().value_or(0);
+    ID_t chatId = chat->getID().value_or(0);
+    ID_t senderId = chat->getUsersIDs().front();
 
 
     Message message(
-        chat_id,
-        client_.getClientID().value_or(0), 
+        chatId,
+        senderId,
         text,
         cl::time_since_epoch()
     );

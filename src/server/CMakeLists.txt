@@ -27,6 +27,7 @@ add_executable(server
 )
 target_link_libraries(server PRIVATE
     client_session_lib
+    thread_pool_lib
     chat_lib
     db_lib
     tcp_socket_lib

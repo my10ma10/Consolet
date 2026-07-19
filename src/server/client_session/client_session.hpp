@@ -12,7 +12,7 @@
 #include "command/command_interface.hpp"
 
 class ClientSession {
-    std::unique_ptr<User> user_;
+    std::unique_ptr<User> user_ = nullptr;
     std::atomic<bool> is_active_{true};
 
     Socket socket_;
@@ -25,8 +25,8 @@ public:
     ClientSession(const ClientSession&) = delete;
     ClientSession& operator=(const ClientSession&) = delete;
 
-    ClientSession(ClientSession&& other) = delete;
-    ClientSession& operator=(ClientSession&& other)  = delete;
+    ClientSession(ClientSession&& other);
+    ClientSession& operator=(ClientSession&& other);
 
     void start();
     void stop();

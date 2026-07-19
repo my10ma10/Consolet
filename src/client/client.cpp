@@ -93,6 +93,10 @@ bool Client::authStatus() {
     return connection_->recvAuthStatus();
 }
 
+void Client::parseResponse() {
+    
+}
+
 std::vector<std::unique_ptr<ICommand>> Client::selectUI() {
     std::size_t ui_choice = 0;
     std::cout << "Select CLI:\n1. Numbered CLI\n2. Slashed CLI\n";

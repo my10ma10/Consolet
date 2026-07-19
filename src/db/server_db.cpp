@@ -257,7 +257,7 @@ std::optional<Chat> ServerDB::findChat(const std::string& chatName) {
         FROM Chat c
         JOIN ChatMembers cm ON cm.chat_id = c.id
         JOIN User u ON u.id = cm.user_id
-        WHERE c.name = ?
+        WHERE u.name = ?
         ORDER BY u.id;)", chatName
     );
 

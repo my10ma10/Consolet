@@ -10,16 +10,23 @@ add_library(message_lib STATIC
 )
 target_link_libraries(message_lib PUBLIC 
     nlohmann_json
+    spdlog::spdlog
 )
 
 add_library(user_lib STATIC
     user/user.cpp
     user/user.hpp
 )
+target_link_libraries(user_lib PUBLIC
+    spdlog::spdlog
+)
 
 add_library(chat_lib STATIC 
     chat/chat.cpp
     chat/chat.hpp
+)
+target_link_libraries(chat_lib PUBLIC
+    spdlog::spdlog
 )
 
 

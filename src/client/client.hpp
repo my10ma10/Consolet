@@ -39,6 +39,7 @@ public:
     void setConnection(std::unique_ptr<ClientConnection> c);
 
     bool authStatus();
+    void parseResponse();
 
 private:
     std::vector<std::unique_ptr<ICommand>> selectUI();

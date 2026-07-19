@@ -8,6 +8,7 @@
 
 #include "client_session/client_session.hpp"
 #include "tcp_socket/tcp_socket.hpp"
+#include "thread_pool/thread_pool.hpp"
 #include "defines.hpp"
 
 
@@ -27,5 +28,7 @@ public:
     
     void start();
     void stop();
+
+    std::unique_ptr<ClientSession> accept();
 
 };
